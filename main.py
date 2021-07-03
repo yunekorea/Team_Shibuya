@@ -16,7 +16,7 @@ def parse_namuwiki_json(limit=-1, debug=False):
 
             if debug:
                 print(prefix, event, value)
-
+            #print(prefix, event, value)
             if (prefix, event) in capture_values:
                 doc[prefix[5:]] = value
             if (prefix, event, value) == ("item", "end_map", None):
@@ -28,15 +28,36 @@ def parse_namuwiki_json(limit=-1, debug=False):
                     break
 
 
-pattern = '<[^>]*>'
-pattern2 = '{z[^z}]*z}'
-pattern3 = '{x[^x}]*x}'
+#정규 표현식
+pattern1 = '<[^>]*>'
+pattern2 = '{z[^z}]*z}'             #'{{{' -> '{z' / '}}}' -> 'z}'
+pattern3 = '{x[^x}]*x}'             #'[['  -> '{x' / ']]'  -> 'x}'
+pattern4 = '\'\'\''                 #'''문장''' : 강조문. '''만 제거하면 될 것이다
+pattern5 = '~~[^~~]*~~'             #취소선 문장. 전체 삭제가 필요할 듯
+pattern6 = '\[\[파일\:[^\]\]]*\]\]'  #파일 링크
+pattern7 = '\[\[[^\]\]]*\]\]'       #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
+pattern8 = '\[youtube\([^\)\]]*\)\]'#youtube 링크
 
+#정규 표현식 패턴 컴파일
+p1 = re.compile(pattern1)
 p2 = re.compile(pattern2)
 p3 = re.compile(pattern3)
+p4 = re.compile(pattern4)
+p5 = re.compile(pattern5)
+p6 = re.compile(pattern6)
+p7 = re.compile(pattern7)
+p8 = re.compile(pattern8)
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
+def preprocess0(sentence, p):
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
 
 def preprocess1(sentence, p):
     tokens = p.findall(sentence)
@@ -51,6 +72,9 @@ def preprocess1(sentence, p):
 
         sentence = sentence.replace(token, new_word)
 
+    print("preprocess1 sentence\n")
+    print(sentence)
+
     return sentence
 
 
@@ -63,10 +87,57 @@ def preprocess2(sentence, p):
 
     return sentence
 
+def preprocess4(sentence, p):       #강조문 표시 삭제
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('\'\'\'', '')
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+def preprocess5(sentence, p):       #취소선 텍스트 삭제
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
+
+def preprocess6(sentence, p):       #사진 등 파일이 링크돼있는 텍스트. 삭제 수행
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
+
+def preprocess7(sentence, p):       #하이퍼링크 정리('|'로 나뉘어져 있는 텍스트에서 우측의 원본만을 추출하고 좌측의 링크된 문서 제목은 삭제)
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('[[', '').replace(']]', '').split('|')
+
+        new_word = new_word[-1]
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+def preprocess8(sentence, p):
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
 
 def printlist(list_2):
     if len(list_2)!=0:
         print(list_2)
+
 
 def makelist(m,list_t1,list_2d):
     if (m == 0) & (list_t1[m][0:4] == '||||'): #row span인지 아닌지
@@ -189,10 +260,6 @@ def table2list2d(table_text):
             makelist(m, list_t1, list_2d5)
             colspan(list_2d5)
 
-
-
-
-
     printlist(list_2d1)
     printlist(list_2d2)
     printlist(list_2d3)
@@ -200,17 +267,31 @@ def table2list2d(table_text):
     printlist(list_2d5)
 
 
-
-
+#main code
 for doc in parse_namuwiki_json(1000, debug=False):
+    print('\n---------------------------------------\n')
     print('Document')
+    print('title:', doc['title'])  # title 출력
+    print('\n--------text--------\n')
+    document_str = str(doc['text'])
 
-    document_str = str(doc['text']).replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *')
+    document_str = preprocess0(document_str, p1)
+    document_str = preprocess4(document_str, p4)
+    document_str = preprocess5(document_str, p5)
+    document_str = preprocess6(document_str, p6)
+    document_str = preprocess7(document_str, p7)
+
+
+    document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
     table_list = []
     scores = []
+    print("document_str_start")
+    print(document_str)
+    print("document_str_done\n")
 
-    for i, table_text in enumerate(table_list_):
+    #table
+    for i, table_text in enumerate(table_list_):    #분리된 문자열을 하나씩 가져옴
         new_table_text = ''
         opened = False
         check1 = 1
@@ -218,27 +299,28 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
         for j in range(len(table_text)):
             if j > 1:
-                if table_text[j - 1] == '|' and table_text[j - 2] == '|':
+                if table_text[j - 1] == '|' and table_text[j - 2] == '|':   #표의 행 시작
                     opened = True
-                if table_text[j - 1] == '\n' and table_text[j] == '|':
+                if table_text[j - 1] == '\n' and table_text[j] == '|':      #
                     check1 += 1
                 if table_text[j] == '\n':
                     check2 += 1
 
             if opened is True:
                 new_table_text += table_text[j]
+
         if opened is True:
             table_list.append(new_table_text)
             scores.append(check1 / check2)
 
-    print('title:', doc['title'])
-
+    #print('title:', doc['title']) #title 출력
 
     for k, table_text in enumerate(table_list):  #dictionary와 비슷, key값과 value값
-        table_text = table_text.replace('{{{', '{z').replace('}}}', 'z}').replace('[[', '{x').replace(']]', 'x}')
-        table_text = re.sub(pattern=pattern, repl='', string=table_text)  #특수문자 제거
-        table_text = preprocess1(table_text, p2) #전처리
-        table_text = preprocess2(table_text, p3) #전처리
+        table_text = table_text.replace('{{{', '{z').replace('}}}', 'z}').replace('[[', '{x').replace(']]', 'x}')   #[[]] : 하이퍼링크 단어
+        table_text = re.sub(pattern=pattern1, repl='', string=table_text)  #특수문자 제거
+        table_text = preprocess1(table_text, p2) #전처리1
+        table_text = preprocess2(table_text, p3) #전처리2
+        print(table_text)
 
 
         #print(table_text) #전처리 된것

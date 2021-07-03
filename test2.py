@@ -28,15 +28,15 @@ def parse_namuwiki_json(limit=-1, debug=False):
                     break
 
 
-pattern = '<[^>]*>'
-pattern2 = '{z[^z}]*z}'
-pattern3 = '{x[^x}]*x}'
+pattern1 = '<[^>]*>'        #
+pattern2 = '{z[^z}]*z}'     #'{{{' -> '{z' / '}}}' -> 'z}'
+pattern3 = '{x[^x}]*x}'     #'[['  -> '{x' / ']]'  -> 'x}'
 
+p1 = re.compile(pattern1)
 p2 = re.compile(pattern2)
 p3 = re.compile(pattern3)
 
 #re.sub(pattern=pattern, repl='', string=doc)
-
 
 def preprocess1(sentence, p):
     tokens = p.findall(sentence)
