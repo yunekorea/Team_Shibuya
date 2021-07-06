@@ -12,11 +12,12 @@ def load_json(filename):
                 print("\nCONTENT: %s" % value)
                 count += 1
             # debug
-            if count==3 :
+            if count== 5 :
                 break
 
+
 if __name__ == "__main__":
-    print('load_json_start')
+    #print('load_json_start')
     load_json('docData200302.json')
-    print('load_json end')
+    #print('load_json end')
 

@@ -30,13 +30,17 @@ def parse_namuwiki_json(limit=-1, debug=False):
 
 #정규 표현식
 pattern1 = '<[^>]*>'
-pattern2 = '{z[^z}]*z}'             #'{{{' -> '{z' / '}}}' -> 'z}'
-pattern3 = '{x[^x}]*x}'             #'[['  -> '{x' / ']]'  -> 'x}'
-pattern4 = '\'\'\''                 #'''문장''' : 강조문. '''만 제거하면 될 것이다
-pattern5 = '~~[^~~]*~~'             #취소선 문장. 전체 삭제가 필요할 듯
-pattern6 = '\[\[파일\:[^\]\]]*\]\]'  #파일 링크
-pattern7 = '\[\[[^\]\]]*\]\]'       #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
-pattern8 = '\[youtube\([^\)\]]*\)\]'#youtube 링크
+pattern2 = '{z[^z}]*z}'                 #'{{{' -> '{z' / '}}}' -> 'z}'
+pattern3 = '{x[^x}]*x}'                 #'[['  -> '{x' / ']]'  -> 'x}'
+pattern4 = '\'\'\''                     #'''문장''' : 강조문. '''만 제거하면 될 것이다
+pattern5 = '~~[^~~]*~~'                 #취소선 문장. 전체 삭제가 필요할 듯
+pattern6 = '\[\[파일\:[^\]\]]*\]\]'      #파일 링크
+pattern7 = '\[\[[^\]\]]*\]\]'           #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
+pattern8 = '\[youtube\([^\)\]]*\)\]'    #youtube 링크
+pattern9 = '[=]+[^=]*[=]+'                 #카테고리 제목
+pattern10 = '\[목차\]'                     #목차
+pattern11 = '\[[Ii]nclude\(.*\)\]'          #include "pattern 9"보다 먼저 처리되어야한다
+pattern12 = '\[\[분류\:[\]\]]*\]\]'        #분류 "pattern 7"보다 먼저 처리
 
 #정규 표현식 패턴 컴파일
 p1 = re.compile(pattern1)
@@ -47,6 +51,10 @@ p5 = re.compile(pattern5)
 p6 = re.compile(pattern6)
 p7 = re.compile(pattern7)
 p8 = re.compile(pattern8)
+p9 = re.compile(pattern9)
+p10 = re.compile(pattern10)
+p11 = re.compile(pattern11)
+p12 = re.compile(pattern12)
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
@@ -59,7 +67,7 @@ def preprocess0(sentence, p):
 
     return sentence
 
-def preprocess1(sentence, p):
+def preprocess1(sentence, p):       #{{{와 }}}로 감싸진 부분 처리
     tokens = p.findall(sentence)
 
     for token in tokens:
@@ -72,7 +80,7 @@ def preprocess1(sentence, p):
 
         sentence = sentence.replace(token, new_word)
 
-    print("preprocess1 sentence\n")
+    #print("preprocess1 sentence\n")
     print(sentence)
 
     return sentence
@@ -87,7 +95,7 @@ def preprocess2(sentence, p):
 
     return sentence
 
-def preprocess4(sentence, p):       #강조문 표시 삭제
+def preprocess4(sentence, p):       #강조문 표시 삭제  (문장, 패턴)순서이며 이후에 한 함수로 변환해도 될 것 같음
     tokens = p.findall(sentence)
 
     for token in tokens:
@@ -133,6 +141,53 @@ def preprocess8(sentence, p):
         sentence = sentence.replace(token, emptywords)
 
     return sentence
+
+def preprocess9(sentence, p):
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        #print(token)
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
+
+def preprocess10(sentence, p):
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
+
+def preprocess11(sentence, p):
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        print(token)
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
+
+def preprocess12(sentence, p):
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
+
+# def preprocess_delete(sentence, p):
+#     tokens = p.findall(sentence)
+#
+#     for token in tokens:
+#         emptywords = ''
+#         sentence = sentence.replace(token, emptywords)
+#
+#     return sentence
 
 def printlist(list_2):
     if len(list_2)!=0:
@@ -197,13 +252,13 @@ def colspan(list_2d):
         if (o!=0) and (o!=(len(list_2d)-1)): # 첫째행이 아니고 마지막 행이 아닐떄
             if len(list_2d[o])<len(list_2d[o-1]):
                 list_2d[o].append(list_2d[o-1][len(list_2d[o-1])-1])
-        elif o == (len(list_2d)-1): #마지막 행일떄
+        elif o == (len(list_2d)-1): # 마지막 행일떄
             if len(list_2d[o])<len(list_2d[o-1]):
-                k= len(list_2d[o-1])-len(list_2d[o])
+                k = len(list_2d[o-1])-len(list_2d[o])
                 for i in range(k):
                     list_2d[o].append(list_2d[o][len(list_2d[o])-1])
-        elif (o==0) and (len(list_2d[o])<len(list_2d[o+1])): #첫째행이고, 첫째행이 둘째행보다 길이가 작을때
-            k= len(list_2d[o+1])-len(list_2d[o])
+        elif (o == 0) and (len(list_2d[o])<len(list_2d[o+1])): # 첫째행이고, 첫째행이 둘째행보다 길이가 작을 때
+            k = len(list_2d[o+1])-len(list_2d[o])
             for i in range(k):
                 list_2d[o].append(list_2d[o][len(list_2d[o])-1])
 
@@ -279,8 +334,15 @@ for doc in parse_namuwiki_json(1000, debug=False):
     document_str = preprocess4(document_str, p4)
     document_str = preprocess5(document_str, p5)
     document_str = preprocess6(document_str, p6)
-    document_str = preprocess7(document_str, p7)
+    document_str = preprocess12(document_str, p12)
 
+    document_str = preprocess8(document_str, p8)
+    document_str = preprocess11(document_str, p11)
+    document_str = preprocess9(document_str, p9)
+    document_str = preprocess10(document_str, p10)
+
+
+    document_str = preprocess7(document_str, p7)
 
     document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
