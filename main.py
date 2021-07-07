@@ -37,10 +37,14 @@ pattern5 = '~~[^~~]*~~'                 #취소선 문장. 전체 삭제가 필�
 pattern6 = '\[\[파일\:[^\]\]]*\]\]'      #파일 링크
 pattern7 = '\[\[[^\]\]]*\]\]'           #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
 pattern8 = '\[youtube\([^\)\]]*\)\]'    #youtube 링크
-pattern9 = '[=]+[^=]*[=]+'                 #카테고리 제목
+pattern9 = '=[=]+[^=]*=[=]+'                 #카테고리 제목
 pattern10 = '\[목차\]'                     #목차
+pattern10_1 = '\[tableofcontent\]'
+pattern10_2 = '\[각주\]'
+pattern10_3 = '\['
 pattern11 = '\[[Ii]nclude\(.*\)\]'          #include "pattern 9"보다 먼저 처리되어야한다
-pattern12 = '\[\[분류\:[\]\]]*\]\]'        #분류 "pattern 7"보다 먼저 처리
+pattern12 = '\[\[분류\:[^\]\]]*\]\]'        #분류 "pattern 7"보다 먼저 처리
+pattern13 = '\[\*[^\]]*\]'               #각주
 
 #정규 표현식 패턴 컴파일
 p1 = re.compile(pattern1)
@@ -55,6 +59,7 @@ p9 = re.compile(pattern9)
 p10 = re.compile(pattern10)
 p11 = re.compile(pattern11)
 p12 = re.compile(pattern12)
+p13 = re.compile(pattern13)
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
@@ -166,7 +171,7 @@ def preprocess11(sentence, p):
 
     for token in tokens:
         emptywords = ''
-        print(token)
+        #print(token)
         sentence = sentence.replace(token, emptywords)
 
     return sentence
@@ -176,9 +181,21 @@ def preprocess12(sentence, p):
 
     for token in tokens:
         emptywords = ''
+        #print(token)
         sentence = sentence.replace(token, emptywords)
 
     return sentence
+
+def preprocess13(sentence, p):
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
+
+
 
 # def preprocess_delete(sentence, p):
 #     tokens = p.findall(sentence)
@@ -335,14 +352,15 @@ for doc in parse_namuwiki_json(1000, debug=False):
     document_str = preprocess5(document_str, p5)
     document_str = preprocess6(document_str, p6)
     document_str = preprocess12(document_str, p12)
+    document_str = preprocess7(document_str, p7)
 
     document_str = preprocess8(document_str, p8)
     document_str = preprocess11(document_str, p11)
+    document_str = preprocess13(document_str, p13)
     document_str = preprocess9(document_str, p9)
     document_str = preprocess10(document_str, p10)
 
 
-    document_str = preprocess7(document_str, p7)
 
     document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
