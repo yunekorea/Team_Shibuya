@@ -16,7 +16,6 @@ def parse_namuwiki_json(limit=-1, debug=False):
 
             if debug:
                 print(prefix, event, value)
-            #print(prefix, event, value)
             if (prefix, event) in capture_values:
                 doc[prefix[5:]] = value
             if (prefix, event, value) == ("item", "end_map", None):
@@ -29,37 +28,61 @@ def parse_namuwiki_json(limit=-1, debug=False):
 
 
 #정규 표현식
+
+#리다이렉트 문서일 경우 해당 패턴으로 시작함. 해당 문서 전체 삭제가 필요.
+pattern_redirect_00 = "#redirect"
+pattern_redirect_01 = "#넘겨주기"
+
 pattern1 = '<[^>]*>'
 pattern2 = '{z[^z}]*z}'                 #'{{{' -> '{z' / '}}}' -> 'z}'
 pattern3 = '{x[^x}]*x}'                 #'[['  -> '{x' / ']]'  -> 'x}'
-pattern4 = '\'\'\''                     #'''문장''' : 강조문. '''만 제거하면 될 것이다
-pattern5 = '~~[^~~]*~~'                 #취소선 문장. 전체 삭제가 필요할 듯
-pattern6 = '\[\[파일\:[^\]\]]*\]\]'      #파일 링크
-pattern7 = '\[\[[^\]\]]*\]\]'           #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
-pattern8 = '\[youtube\([^\)\]]*\)\]'    #youtube 링크
-pattern9 = '=[=]+[^=]*=[=]+'                 #카테고리 제목
-pattern10 = '\[목차\]'                     #목차
-pattern10_1 = '\[tableofcontent\]'
-pattern10_2 = '\[각주\]'
-pattern10_3 = '\['
-pattern11 = '\[[Ii]nclude\(.*\)\]'          #include "pattern 9"보다 먼저 처리되어야한다
-pattern12 = '\[\[분류\:[^\]\]]*\]\]'        #분류 "pattern 7"보다 먼저 처리
-pattern13 = '\[\*[^\]]*\]'               #각주
+
+#중간에 추가 글이 들어가지 않는 패턴. 단순 삭제
+pattern_sim_00 = '\'\'\' \'\''                  #강조 기울임 시작
+pattern_sim_01 = '\'\' \'\'\''                  #강조 기울임 끝
+pattern_sim_02 = '\'\'\''                       #'''문장''' : 강조문. '''만 제거하면 될 것이다
+pattern_sim_03 = '\'\''                         #기울임. pattern4 이후에 처리
+pattern_sim_04 = '\[목차\]'                       #목차 표시 지역
+pattern_sim_05 = '\[tableofcontent\]'
+pattern_sim_06 = '\[각주\]'                       #각주 표시 지역
+pattern_sim_07 = '\[footnote\]'
+pattern_sim_08 = '\[br\]'                       #줄바꿈
+pattern_sim_09 = '\[\[\.\./\]\]'                #현재 문서의 상위 문서 링크
+pattern_sim_10 = '-{4,9}'                       #4개에서 9개의 하이픈 -> 수평중
+pattern_sim_11 = '\[clearfix\]'                 #CSS float 속성 초기화
+
+#중간에 추가 글이 들어가는 패턴. 단순 삭제
+pattern_del_00 = '\[youtube\([^\)\]]*\)\]'      #youtube 링크
+pattern_del_01 = '\[kakaotv\([^\)\]]*\)\]'      #kakaotv 링크
+pattern_del_02 = '\[nicovideo\([^\)\]]*\)\]'    #nicovideo 링크
+pattern_del_03 = '\{\{\{#!html[^\}\}\}]*\}\}\}' #html 링크
+pattern_del_04 = '=[=]+[^=]*=[=]+'              #문단 제목
+pattern_del_05 = '~~[^~~]*~~'                   #취소선 문장. 전체 삭제가 필요할 듯
+pattern_del_06 = '--[^--]*--'                   #취소선 문장
+pattern_del_07 = '\[\[파일\:[^\]\]]*\]\]'        #파일 링크
+pattern_del_08 = '\[\*[^\]]*\]'                 #각주
+pattern_del_09 = '\[[Ii]nclude\(.*\)\]'         #include "pattern 9"보다 먼저 처리되어야한다
+pattern_del_10 = '\[\[분류\:[^\]\]]*\]\]'        #분류 "pattern 7"보다 먼저 처리
+
+patterna = '__[^__]*__'                         #밑줄
+patternb = '\^\^[^\^\^]*\^\^'                   #위첨자
+patternc = ',,[^,,]*,,'                         #아래첨자
+patternd = '\{\{\{#!folding [^\}\}\}]*\}\}\}'   #접기 문서
+patterne = '>{1,3}.*\n'                         #인용문
+
+pattern7 = '\[\[[^\]\]]*\]\]'                   #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
+
+#아직 처리방법이 정해지지 않은 패턴
+pattern_age = '\[age\([^\)\]]*\)\]'             #YYYY-MM-DD형식으로 ()내에 입력하면 자동으로 만 나이 출력
+pattern_date = '\[date\]'                       #date, datetime : 현재 시각 출력
+pattern_datetime = '\[datetime\]'
+pattern_dday = '\[dday\([^\)\]]*\)\]'           #잔여일수, 경과일수 출력
 
 #정규 표현식 패턴 컴파일
 p1 = re.compile(pattern1)
 p2 = re.compile(pattern2)
 p3 = re.compile(pattern3)
-p4 = re.compile(pattern4)
-p5 = re.compile(pattern5)
-p6 = re.compile(pattern6)
-p7 = re.compile(pattern7)
-p8 = re.compile(pattern8)
-p9 = re.compile(pattern9)
-p10 = re.compile(pattern10)
-p11 = re.compile(pattern11)
-p12 = re.compile(pattern12)
-p13 = re.compile(pattern13)
+
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
@@ -152,7 +175,6 @@ def preprocess9(sentence, p):
 
     for token in tokens:
         emptywords = ''
-        #print(token)
         sentence = sentence.replace(token, emptywords)
 
     return sentence
@@ -171,7 +193,6 @@ def preprocess11(sentence, p):
 
     for token in tokens:
         emptywords = ''
-        #print(token)
         sentence = sentence.replace(token, emptywords)
 
     return sentence
@@ -181,7 +202,6 @@ def preprocess12(sentence, p):
 
     for token in tokens:
         emptywords = ''
-        #print(token)
         sentence = sentence.replace(token, emptywords)
 
     return sentence
