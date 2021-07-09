@@ -38,6 +38,7 @@ pattern2 = '{z[^z}]*z}'                 #'{{{' -> '{z' / '}}}' -> 'z}'
 pattern3 = '{x[^x}]*x}'                 #'[['  -> '{x' / ']]'  -> 'x}'
 
 #중간에 추가 글이 들어가지 않는 패턴. 단순 삭제
+#pattern_sim_list = []
 pattern_sim_00 = '\'\'\' \'\''                  #강조 기울임 시작
 pattern_sim_01 = '\'\' \'\'\''                  #강조 기울임 끝
 pattern_sim_02 = '\'\'\''                       #'''문장''' : 강조문. '''만 제거하면 될 것이다
@@ -48,41 +49,80 @@ pattern_sim_06 = '\[각주\]'                       #각주 표시 지역
 pattern_sim_07 = '\[footnote\]'
 pattern_sim_08 = '\[br\]'                       #줄바꿈
 pattern_sim_09 = '\[\[\.\./\]\]'                #현재 문서의 상위 문서 링크
-pattern_sim_10 = '-{4,9}'                       #4개에서 9개의 하이픈 -> 수평중
+pattern_sim_10 = '-{4,9}'                       #4개에서 9개의 하이픈 -> 수평줄
 pattern_sim_11 = '\[clearfix\]'                 #CSS float 속성 초기화
 
-#중간에 추가 글이 들어가는 패턴. 단순 삭제
+
+#중간에 추가 글이 들어가는 패턴. 단순 삭제하기
+#pattern_del_list = []
 pattern_del_00 = '\[youtube\([^\)\]]*\)\]'      #youtube 링크
 pattern_del_01 = '\[kakaotv\([^\)\]]*\)\]'      #kakaotv 링크
 pattern_del_02 = '\[nicovideo\([^\)\]]*\)\]'    #nicovideo 링크
 pattern_del_03 = '\{\{\{#!html[^\}\}\}]*\}\}\}' #html 링크
 pattern_del_04 = '=[=]+[^=]*=[=]+'              #문단 제목
-pattern_del_05 = '~~[^~~]*~~'                   #취소선 문장. 전체 삭제가 필요할 듯
+pattern_del_05 = '~~[^~~]*~~'                   #취소선 문장
 pattern_del_06 = '--[^--]*--'                   #취소선 문장
 pattern_del_07 = '\[\[파일\:[^\]\]]*\]\]'        #파일 링크
-pattern_del_08 = '\[\*[^\]]*\]'                 #각주
-pattern_del_09 = '\[[Ii]nclude\(.*\)\]'         #include "pattern 9"보다 먼저 처리되어야한다
-pattern_del_10 = '\[\[분류\:[^\]\]]*\]\]'        #분류 "pattern 7"보다 먼저 처리
+pattern_del_08 = '\[[Ii]nclude\(.*\)\]'         #include
+pattern_del_09 = '\[\[분류\:[^\]\]]*\]\]'        #분류
+pattern_del_10 = '\[\[https?://[^\|\]\]]*\]\]'  #외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
+pattern_del_11 = '\[\*[^\]]*\]'                 #각주. 현재는 내용 전체를 삭제하지만 이후에 살려야할수도 있음. *우측에 ' '없이 붙는 단어나 문장은 각주의 제목.
 
-patterna = '__[^__]*__'                         #밑줄
-patternb = '\^\^[^\^\^]*\^\^'                   #위첨자
-patternc = ',,[^,,]*,,'                         #아래첨자
-patternd = '\{\{\{#!folding [^\}\}\}]*\}\}\}'   #접기 문서
-patterne = '>{1,3}.*\n'                         #인용문
+#중간에 추가 글이 들어가는 패턴. 표시된 부분만 삭제
+#pattern_norm_list = []
+pattern_norm_00 = '__[^__]*__'                          #밑줄
+pattern_norm_01 = '\{\{\{#!folding [^\}\}\}]*\}\}\}'    #접기 문서
 
-pattern7 = '\[\[[^\]\]]*\]\]'                   #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
+#별도의 처리방법이 필요함
+pattern_ex_link = '\[\[[^\]\]]*\]\]'            #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
 
 #아직 처리방법이 정해지지 않은 패턴
+pattern_quote = '>+.*\n'                        #인용문
 pattern_age = '\[age\([^\)\]]*\)\]'             #YYYY-MM-DD형식으로 ()내에 입력하면 자동으로 만 나이 출력
 pattern_date = '\[date\]'                       #date, datetime : 현재 시각 출력
 pattern_datetime = '\[datetime\]'
 pattern_dday = '\[dday\([^\)\]]*\)\]'           #잔여일수, 경과일수 출력
+patternb = '\^\^[^\^\^]*\^\^'                   #위첨자
+patternc = ',,[^,,]*,,'                         #아래첨자
 
 #정규 표현식 패턴 컴파일
 p1 = re.compile(pattern1)
 p2 = re.compile(pattern2)
 p3 = re.compile(pattern3)
 
+ps00 = re.compile(pattern_sim_00)
+ps01 = re.compile(pattern_sim_01)
+ps02 = re.compile(pattern_sim_02)
+ps03 = re.compile(pattern_sim_03)
+ps04 = re.compile(pattern_sim_04)
+ps05 = re.compile(pattern_sim_05)
+ps06 = re.compile(pattern_sim_06)
+ps07 = re.compile(pattern_sim_07)
+ps08 = re.compile(pattern_sim_08)
+ps09 = re.compile(pattern_sim_09)
+ps10 = re.compile(pattern_sim_10)
+ps11 = re.compile(pattern_sim_11)
+pattern_sim_list = [ps00, ps01, ps02, ps03, ps04, ps05, ps06, ps07, ps08, ps09, ps10, ps11]
+
+pd00 = re.compile(pattern_del_00)
+pd01 = re.compile(pattern_del_01)
+pd02 = re.compile(pattern_del_02)
+pd03 = re.compile(pattern_del_03)
+pd04 = re.compile(pattern_del_04)
+pd05 = re.compile(pattern_del_05)
+pd06 = re.compile(pattern_del_06)
+pd07 = re.compile(pattern_del_07)
+pd08 = re.compile(pattern_del_08)
+pd09 = re.compile(pattern_del_09)
+pd10 = re.compile(pattern_del_10)
+pd11 = re.compile(pattern_del_11)
+pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06, pd07, pd08, pd09, pd10, pd11]
+
+pn00 = re.compile(pattern_norm_00)
+pn01 = re.compile(pattern_norm_01)
+pattern_norm_list = [pn00, pn01]
+
+pex_link = re.compile(pattern_ex_link)
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
@@ -132,92 +172,7 @@ def preprocess4(sentence, p):       #강조문 표시 삭제  (문장, 패턴)�
 
     return sentence
 
-def preprocess5(sentence, p):       #취소선 텍스트 삭제
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        emptywords = ''
-        sentence = sentence.replace(token, emptywords)
-
-    return sentence
-
-def preprocess6(sentence, p):       #사진 등 파일이 링크돼있는 텍스트. 삭제 수행
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        emptywords = ''
-        sentence = sentence.replace(token, emptywords)
-
-    return sentence
-
-def preprocess7(sentence, p):       #하이퍼링크 정리('|'로 나뉘어져 있는 텍스트에서 우측의 원본만을 추출하고 좌측의 링크된 문서 제목은 삭제)
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        new_word = token.replace('[[', '').replace(']]', '').split('|')
-
-        new_word = new_word[-1]
-        sentence = sentence.replace(token, new_word)
-
-    return sentence
-
-def preprocess8(sentence, p):
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        emptywords = ''
-        sentence = sentence.replace(token, emptywords)
-
-    return sentence
-
-def preprocess9(sentence, p):
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        emptywords = ''
-        sentence = sentence.replace(token, emptywords)
-
-    return sentence
-
-def preprocess10(sentence, p):
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        emptywords = ''
-        sentence = sentence.replace(token, emptywords)
-
-    return sentence
-
-def preprocess11(sentence, p):
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        emptywords = ''
-        sentence = sentence.replace(token, emptywords)
-
-    return sentence
-
-def preprocess12(sentence, p):
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        emptywords = ''
-        sentence = sentence.replace(token, emptywords)
-
-    return sentence
-
-def preprocess13(sentence, p):
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        emptywords = ''
-        sentence = sentence.replace(token, emptywords)
-
-    return sentence
-
-
-
-# def preprocess_delete(sentence, p):
+# def preprocess5(sentence, p):       #취소선 텍스트 삭제
 #     tokens = p.findall(sentence)
 #
 #     for token in tokens:
@@ -225,6 +180,91 @@ def preprocess13(sentence, p):
 #         sentence = sentence.replace(token, emptywords)
 #
 #     return sentence
+#
+# def preprocess6(sentence, p):       #사진 등 파일이 링크돼있는 텍스트. 삭제 수행
+#     tokens = p.findall(sentence)
+#
+#     for token in tokens:
+#         emptywords = ''
+#         sentence = sentence.replace(token, emptywords)
+#
+#     return sentence
+
+def preprocess_link(sentence, p):       #하이퍼링크 정리('|'로 나뉘어져 있는 텍스트에서 우측의 원본만을 추출하고 좌측의 링크된 문서 제목은 삭제)
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('[[', '').replace(']]', '').split('|')
+        new_word = new_word[-1]
+        new_word = new_word.replace('\\#', '#').replace('\\\'', '\'')
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+# def preprocess8(sentence, p):
+#     tokens = p.findall(sentence)
+#
+#     for token in tokens:
+#         emptywords = ''
+#         sentence = sentence.replace(token, emptywords)
+#
+#     return sentence
+#
+# def preprocess9(sentence, p):
+#     tokens = p.findall(sentence)
+#
+#     for token in tokens:
+#         emptywords = ''
+#         sentence = sentence.replace(token, emptywords)
+#
+#     return sentence
+#
+# def preprocess10(sentence, p):
+#     tokens = p.findall(sentence)
+#
+#     for token in tokens:
+#         emptywords = ''
+#         sentence = sentence.replace(token, emptywords)
+#
+#     return sentence
+#
+# def preprocess11(sentence, p):
+#     tokens = p.findall(sentence)
+#
+#     for token in tokens:
+#         emptywords = ''
+#         sentence = sentence.replace(token, emptywords)
+#
+#     return sentence
+#
+# def preprocess12(sentence, p):
+#     tokens = p.findall(sentence)
+#
+#     for token in tokens:
+#         emptywords = ''
+#         sentence = sentence.replace(token, emptywords)
+#
+#     return sentence
+#
+# def preprocess13(sentence, p):
+#     tokens = p.findall(sentence)
+#
+#     for token in tokens:
+#         emptywords = ''
+#         sentence = sentence.replace(token, emptywords)
+#
+#     return sentence
+
+
+
+def preprocess_delete(sentence, p):
+    tokens = p.findall(sentence)
+
+    for token in tokens:
+        emptywords = ''
+        sentence = sentence.replace(token, emptywords)
+
+    return sentence
 
 def printlist(list_2):
     if len(list_2)!=0:
@@ -368,19 +408,25 @@ for doc in parse_namuwiki_json(1000, debug=False):
     document_str = str(doc['text'])
 
     document_str = preprocess0(document_str, p1)
-    document_str = preprocess4(document_str, p4)
-    document_str = preprocess5(document_str, p5)
-    document_str = preprocess6(document_str, p6)
-    document_str = preprocess12(document_str, p12)
-    document_str = preprocess7(document_str, p7)
+    # document_str = preprocess4(document_str, p4)
+    # document_str = preprocess5(document_str, p5)
+    # document_str = preprocess6(document_str, p6)
+    # document_str = preprocess12(document_str, p12)
+    # document_str = preprocess7(document_str, p7)
+    #
+    # document_str = preprocess8(document_str, p8)
+    # document_str = preprocess11(document_str, p11)
+    # document_str = preprocess13(document_str, p13)
+    # document_str = preprocess9(document_str, p9)
+    # document_str = preprocess10(document_str, p10)
 
-    document_str = preprocess8(document_str, p8)
-    document_str = preprocess11(document_str, p11)
-    document_str = preprocess13(document_str, p13)
-    document_str = preprocess9(document_str, p9)
-    document_str = preprocess10(document_str, p10)
+    for pat in pattern_sim_list:
+        document_str = preprocess_delete(document_str, pat)
 
+    for pat in pattern_del_list:
+        document_str = preprocess_delete(document_str, pat)
 
+    document_str = preprocess_link(document_str, pex_link)
 
     document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
