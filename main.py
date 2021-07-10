@@ -30,15 +30,14 @@ def parse_namuwiki_json(limit=-1, debug=False):
 #정규 표현식
 
 #리다이렉트 문서일 경우 해당 패턴으로 시작함. 해당 문서 전체 삭제가 필요.
-pattern_redirect_00 = "#redirect"
-pattern_redirect_01 = "#넘겨주기"
+# pattern_redirect_00 = "#redirect"
+# pattern_redirect_01 = "#넘겨주기"
 
 pattern1 = '<[^>]*>'
 pattern2 = '{z[^z}]*z}'                 #'{{{' -> '{z' / '}}}' -> 'z}'
 pattern3 = '{x[^x}]*x}'                 #'[['  -> '{x' / ']]'  -> 'x}'
 
 #중간에 추가 글이 들어가지 않는 패턴. 단순 삭제
-#pattern_sim_list = []
 pattern_sim_00 = '\'\'\' \'\''                  #강조 기울임 시작
 pattern_sim_01 = '\'\' \'\'\''                  #강조 기울임 끝
 pattern_sim_02 = '\'\'\''                       #'''문장''' : 강조문. '''만 제거하면 될 것이다
@@ -54,7 +53,6 @@ pattern_sim_11 = '\[clearfix\]'                 #CSS float 속성 초기화
 
 
 #중간에 추가 글이 들어가는 패턴. 단순 삭제하기
-#pattern_del_list = []
 pattern_del_00 = '\[youtube\([^\)\]]*\)\]'      #youtube 링크
 pattern_del_01 = '\[kakaotv\([^\)\]]*\)\]'      #kakaotv 링크
 pattern_del_02 = '\[nicovideo\([^\)\]]*\)\]'    #nicovideo 링크
@@ -69,7 +67,6 @@ pattern_del_10 = '\[\[https?://[^\|\]\]]*\]\]'  #외부링크로 연결되어 �
 pattern_del_11 = '\[\*[^\]]*\]'                 #각주. 현재는 내용 전체를 삭제하지만 이후에 살려야할수도 있음. *우측에 ' '없이 붙는 단어나 문장은 각주의 제목.
 
 #중간에 추가 글이 들어가는 패턴. 표시된 부분만 삭제
-#pattern_norm_list = []
 pattern_norm_00 = '__[^__]*__'                          #밑줄
 pattern_norm_01 = '\{\{\{#!folding [^\}\}\}]*\}\}\}'    #접기 문서
 
@@ -120,11 +117,18 @@ pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06, pd07, pd08, pd09, 
 
 pn00 = re.compile(pattern_norm_00)
 pn01 = re.compile(pattern_norm_01)
-pattern_norm_list = [pn00, pn01]
+#pattern_norm_list = [pn00, pn01]
 
 pex_link = re.compile(pattern_ex_link)
 
 #re.sub(pattern=pattern, repl='', string=doc)
+
+def redirect_check(sentence):               #리다이렉트 문서인지 확인 후 true/false 반환
+    eng = sentence.startswith('#redirect')
+    kor = sentence.startswith('#넘겨주기')
+    result = eng|kor
+
+    return result
 
 def preprocess0(sentence, p):
     tokens = p.findall(sentence)
@@ -255,14 +259,30 @@ def preprocess_link(sentence, p):       #하이퍼링크 정리('|'로 나뉘어
 #
 #     return sentence
 
-
-
 def preprocess_delete(sentence, p):
     tokens = p.findall(sentence)
 
     for token in tokens:
         emptywords = ''
         sentence = sentence.replace(token, emptywords)
+
+    return sentence
+
+def preprocess_norm_00(sentence):
+    tokens = pn00.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('__', '')
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+def preprocess_norm_01(sentence):
+    tokens = pn01.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('{{{#!folding ', '').replace('}}}', '')
+        sentence = sentence.replace(token, new_word)
 
     return sentence
 
@@ -401,24 +421,20 @@ def table2list2d(table_text):
 
 #main code
 for doc in parse_namuwiki_json(1000, debug=False):
-    print('\n---------------------------------------\n')
-    print('Document')
-    print('title:', doc['title'])  # title 출력
-    print('\n--------text--------\n')
+    document_title = str(doc['title'])
     document_str = str(doc['text'])
 
+    isRedirect = redirect_check(document_str)   #doc가 리다이렉트 문서인지 여부를 저장
+    #print("redirect : ", isRedirect)
+    if(isRedirect == True):                     #doc가 리다이렉트 문서일 경우
+        continue                                #이하의 처리 코드를 모두 건너뛰고 다음 문서로 이동
+
+    print('\n---------------------------------------\n')
+    print('Document')
+    print('title:', document_title)  # title 출력
+    print('\n--------text--------\n')
+
     document_str = preprocess0(document_str, p1)
-    # document_str = preprocess4(document_str, p4)
-    # document_str = preprocess5(document_str, p5)
-    # document_str = preprocess6(document_str, p6)
-    # document_str = preprocess12(document_str, p12)
-    # document_str = preprocess7(document_str, p7)
-    #
-    # document_str = preprocess8(document_str, p8)
-    # document_str = preprocess11(document_str, p11)
-    # document_str = preprocess13(document_str, p13)
-    # document_str = preprocess9(document_str, p9)
-    # document_str = preprocess10(document_str, p10)
 
     for pat in pattern_sim_list:
         document_str = preprocess_delete(document_str, pat)
@@ -426,15 +442,19 @@ for doc in parse_namuwiki_json(1000, debug=False):
     for pat in pattern_del_list:
         document_str = preprocess_delete(document_str, pat)
 
+    document_str = preprocess_norm_00(document_str)
+    document_str = preprocess_norm_01(document_str)
+
     document_str = preprocess_link(document_str, pex_link)
+
+    print("document_str_start")
+    print(document_str)
+    print("document_str_done\n")
 
     document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
     table_list = []
     scores = []
-    print("document_str_start")
-    print(document_str)
-    print("document_str_done\n")
 
     #table
     for i, table_text in enumerate(table_list_):    #분리된 문자열을 하나씩 가져옴
