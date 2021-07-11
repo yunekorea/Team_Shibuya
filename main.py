@@ -447,12 +447,15 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     document_str = preprocess_link(document_str, pex_link)
 
-    print("document_str_start")
-    print(document_str)
-    print("document_str_done\n")
+    # print("document_str_start")
+    # print(document_str)
+    # print("document_str_done\n")
 
-    document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환
+    document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환        ???
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
+    print("table list\n")
+    print(table_list_)
+    print("--------done-------\n")
     table_list = []
     scores = []
 
@@ -460,20 +463,20 @@ for doc in parse_namuwiki_json(1000, debug=False):
     for i, table_text in enumerate(table_list_):    #분리된 문자열을 하나씩 가져옴
         new_table_text = ''
         opened = False
-        check1 = 1
-        check2 = 1
+        check1 = 1                                  #???
+        check2 = 1                                  #???
 
         for j in range(len(table_text)):
             if j > 1:
                 if table_text[j - 1] == '|' and table_text[j - 2] == '|':   #표의 행 시작
                     opened = True
-                if table_text[j - 1] == '\n' and table_text[j] == '|':      #
+                if table_text[j - 1] == '\n' and table_text[j] == '|':      #표 개행
                     check1 += 1
                 if table_text[j] == '\n':
                     check2 += 1
 
-            if opened is True:
-                new_table_text += table_text[j]
+            if opened is True:                                              #표의 행이 시작됐을 때
+                new_table_text += table_text[j]                             #테이블 텍스트에 삽입하기 시작함
 
         if opened is True:
             table_list.append(new_table_text)
@@ -484,17 +487,16 @@ for doc in parse_namuwiki_json(1000, debug=False):
     for k, table_text in enumerate(table_list):  #dictionary와 비슷, key값과 value값
         table_text = table_text.replace('{{{', '{z').replace('}}}', 'z}').replace('[[', '{x').replace(']]', 'x}')   #[[]] : 하이퍼링크 단어
         table_text = re.sub(pattern=pattern1, repl='', string=table_text)  #특수문자 제거
-        table_text = preprocess1(table_text, p2) #전처리1
-        table_text = preprocess2(table_text, p3) #전처리2
-        print(table_text)
-
+        table_text = preprocess1(table_text, p2) #전처리1 {{{}}}
+        table_text = preprocess2(table_text, p3) #전처리2 [[]]
+        #print(table_text)
 
         #print(table_text) #전처리 된것
         print(scores[k])
         #print(table_list[k]) #전처리 안된 것
-        print(table_text)
+        print(table_text)       #전처리 된 테이블 텍스트
 
-        if "||||" in table_text:#table일시
+        if "||||" in table_text:
             #print(table_text)
             (table2list2d(table_text))
         elif "|| '" in table_text:
