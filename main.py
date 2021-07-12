@@ -57,14 +57,15 @@ pattern_del_00 = '\[youtube\([^\)\]]*\)\]'      #youtube 링크
 pattern_del_01 = '\[kakaotv\([^\)\]]*\)\]'      #kakaotv 링크
 pattern_del_02 = '\[nicovideo\([^\)\]]*\)\]'    #nicovideo 링크
 pattern_del_03 = '\{\{\{#!html[^\}\}\}]*\}\}\}' #html 링크
-pattern_del_04 = '=[=]+[^=]*=[=]+'              #문단 제목
-pattern_del_05 = '~~[^~~]*~~'                   #취소선 문장
-pattern_del_06 = '--[^--]*--'                   #취소선 문장
-pattern_del_07 = '\[\[파일\:[^\]\]]*\]\]'        #파일 링크
-pattern_del_08 = '\[[Ii]nclude\(.*\)\]'         #include
-pattern_del_09 = '\[\[분류\:[^\]\]]*\]\]'        #분류
-pattern_del_10 = '\[\[https?://[^\|\]\]]*\]\]'  #외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
-pattern_del_11 = '\[\*[^\]]*\]'                 #각주. 현재는 내용 전체를 삭제하지만 이후에 살려야할수도 있음. *우측에 ' '없이 붙는 단어나 문장은 각주의 제목.
+pattern_del_04 = '~~[^~~]*~~'                   #취소선 문장
+pattern_del_05 = '--[^--]*--'                   #취소선 문장
+pattern_del_06 = '\[[Ii]nclude\(.*\)\]'         #include
+pattern_del_07 = '\[\*[^\]]*\]'                 #각주. 현재는 내용 전체를 삭제하지만 이후에 살려야할수도 있음. *우측에 ' '없이 붙는 단어나 문장은 각주의 제목.
+pattern_del_08 = '=[=]+[^=]*=[=]+'              #문단 제목
+pattern_del_09 = '\[\[파일\:[^\]\]]*\]\]'        #파일 링크
+pattern_del_10 = '\[\[분류\:[^\]\]]*\]\]'        #분류
+pattern_del_11 = '\[\[https?://[^\|\]\]]*\]\]'  #외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
+
 
 #중간에 추가 글이 들어가는 패턴. 표시된 부분만 삭제
 pattern_norm_00 = '__[^__]*__'                          #밑줄
@@ -167,14 +168,14 @@ def preprocess2(sentence, p):
 
     return sentence
 
-def preprocess4(sentence, p):       #강조문 표시 삭제  (문장, 패턴)순서이며 이후에 한 함수로 변환해도 될 것 같음
-    tokens = p.findall(sentence)
-
-    for token in tokens:
-        new_word = token.replace('\'\'\'', '')
-        sentence = sentence.replace(token, new_word)
-
-    return sentence
+# def preprocess4(sentence, p):       #강조문 표시 삭제  (문장, 패턴)순서이며 이후에 한 함수로 변환해도 될 것 같음
+#     tokens = p.findall(sentence)
+#
+#     for token in tokens:
+#         new_word = token.replace('\'\'\'', '')
+#         sentence = sentence.replace(token, new_word)
+#
+#     return sentence
 
 # def preprocess5(sentence, p):       #취소선 텍스트 삭제
 #     tokens = p.findall(sentence)
@@ -291,8 +292,8 @@ def printlist(list_2):
         print(list_2)
 
 
-def makelist(m,list_t1,list_2d):
-    if (m == 0) & (list_t1[m][0:4] == '||||'): #row span인지 아닌지
+def makelist(m,list_t1,list_2d):                #표 텍스트를 이용해서 리스트 생성
+    if (m == 0) & (list_t1[m][0:4] == '||||'):  #row span인지 아닌지
         pass
     elif list_t1[m][0:6] == '||||||':
         list_t1[m] = list_t1[m][4:]
@@ -373,10 +374,11 @@ def table2list2d(table_text):
     list_2d4 = []
     list_2d5 = []
 
-    nextlistswitch =0
+    nextlistswitch = 0
     for m, p in enumerate(list_t1):
         if (list_t1[m][0:2]!='||')and(list_t1[m][-2:]!='||'): #만약에 table_text의 첫번째 줄에 양쪽끝이 둘다 ||로 닫힌 경우가 아닌경우 : 테이블이 아닌경우
             if len(list_2d1)==0: #list_2d의 길이가 0인 경우
+                print("list_2d1 length : ", len(list_2d1))
                 #return list_2d #생각중, return 지우고 다른 list로 바꾸는 방법 생각해야
                 continue #생각중, 이거는 아마 가만 놔둬야 할 듯
             elif len(list_2d1)!=0: #list_2d가 0이 아닌 경우
@@ -427,7 +429,7 @@ for doc in parse_namuwiki_json(1000, debug=False):
     isRedirect = redirect_check(document_str)   #doc가 리다이렉트 문서인지 여부를 저장
     #print("redirect : ", isRedirect)
     if(isRedirect == True):                     #doc가 리다이렉트 문서일 경우
-        continue                                #이하의 처리 코드를 모두 건너뛰고 다음 문서로 이동
+        continue                                #이하의 처리 코드를 모두 건너뛰고 다음 doc으로 이동
 
     print('\n---------------------------------------\n')
     print('Document')
@@ -480,7 +482,7 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
         if opened is True:
             table_list.append(new_table_text)
-            scores.append(check1 / check2)
+            scores.append(check1 / check2)                                  #???
 
     #print('title:', doc['title']) #title 출력
 
