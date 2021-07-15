@@ -293,25 +293,28 @@ def printlist(list_2):
 
 
 def makelist(m,list_t1,list_2d):                #표 텍스트를 이용해서 리스트 생성
+    print('--------\nmakelist function')
+    print("before\n", list_t1)
+
     if (m == 0) & (list_t1[m][0:4] == '||||'):  #row span인지 아닌지
         pass
-    elif list_t1[m][0:6] == '||||||':
+    elif list_t1[m][0:6] == '||||||':           #|||||| -> ||||
         list_t1[m] = list_t1[m][4:]
-    elif list_t1[m][0:2] == '||':
+    elif list_t1[m][0:2] == '||':               #row span이 아니며 ||로 시작하는 경우 -> ||삭제
         list_t1[m] = list_t1[m][2:]
-    if list_t1[m][-2:] == '||':
+
+    if list_t1[m][-2:] == '||':                 #끝부분의 || 삭제
         list_t1[m] = list_t1[m][:-2]
-        # list_t1[m] = list_t1[m][2:-2] # 끝에 ||삭제하는 코드
-        # print(list_t1[m])
-    if '||||||||||||||||' in list_t1[m]:
+
+    if '||||||||||||||||' in list_t1[m]:        #|*16
         a = 1
-    elif '||||||||||||||' in list_t1[m]:
+    elif '||||||||||||||' in list_t1[m]:        #|*14
         a = 2
-    elif '||||||||||' in list_t1[m]:
+    elif '||||||||||' in list_t1[m]:            #|*10
         a = 3
-    elif '||||||' in list_t1[m]:
+    elif '||||||' in list_t1[m]:                #|*6
         a = 4
-    elif '||||' in list_t1[m]:
+    elif '||||' in list_t1[m]:                  #|*4
         a = 5
     else:
         a = 0
@@ -324,7 +327,7 @@ def makelist(m,list_t1,list_2d):                #표 텍스트를 이용해서 �
     #    if "||||" in k:
     #        list_t2[l] = k.split('|||') #두번째 나누기 : ||||에 따라 나누기, 리스
     # print(list_t2)
-    if a != 0:
+    if a != 0:      #a가 0이 아닌 경우가 무엇인가???
         # print(a)
         for o, word in enumerate(list_t2):
             if word == '':
@@ -341,11 +344,16 @@ def makelist(m,list_t1,list_2d):                #표 텍스트를 이용해서 �
                     list_t2[o] = list_t2[o + 5]
                 elif list_t2[o + 6] != '':
                     list_t2[o] = list_t2[o + 6]
+
+    print("after\n", list_t1)
+    print("-------\n")
     list_2d.append(list_t2)
 
 
 
 def colspan(list_2d):
+    print('========\ncolspan function')
+    print('before\n', list_2d)
     for o in range(len(list_2d)):
         if (o!=0) and (o!=(len(list_2d)-1)): # 첫째행이 아니고 마지막 행이 아닐떄
             if len(list_2d[o])<len(list_2d[o-1]):
@@ -359,22 +367,22 @@ def colspan(list_2d):
             k = len(list_2d[o+1])-len(list_2d[o])
             for i in range(k):
                 list_2d[o].append(list_2d[o][len(list_2d[o])-1])
+    print('after\n', list_2d)
+    print('========\n')
 
 
-
-
-def table2list2d(table_text):
+def table2list2d(table_text):       #표를 2차원 리스트로 변경
     #print(table_text)
     print('table')
     list_t1 = table_text.split('\n')
 
-    list_2d1 = []
-    list_2d2 = []
+    list_2d1 = []                   #한 문서 내에 있는 여러 표를 리스트로 저장하기 위해서
+    list_2d2 = []                   #여러 개의 빈 리스트를 생성함
     list_2d3 = []
     list_2d4 = []
     list_2d5 = []
 
-    nextlistswitch = 0
+    nextlistswitch = 0              #한 문서 내에 여러 리스트가 있는 경우 다음
     for m, p in enumerate(list_t1):
         if (list_t1[m][0:2]!='||')and(list_t1[m][-2:]!='||'): #만약에 table_text의 첫번째 줄에 양쪽끝이 둘다 ||로 닫힌 경우가 아닌경우 : 테이블이 아닌경우
             if len(list_2d1)==0: #list_2d의 길이가 0인 경우
@@ -414,11 +422,25 @@ def table2list2d(table_text):
             makelist(m, list_t1, list_2d5)
             colspan(list_2d5)
 
+    print("========\nlist_2d1 : \n")
     printlist(list_2d1)
+    print("\nlist_2d1\n========\n")
+
+    print("========\nlist_2d2 : \n")
     printlist(list_2d2)
+    print("\nlist_2d2\n========\n")
+
+    print("========\nlist_2d3 : \n")
     printlist(list_2d3)
+    print("\nlist_2d3\n========\n")
+
+    print("========\nlist_2d4 : \n")
     printlist(list_2d4)
+    print("\nlist_2d4\n========\n")
+
+    print("========\nlist_2d5 : \n")
     printlist(list_2d5)
+    print("\nlist_2d5\n========\n")
 
 
 #main code
@@ -462,7 +484,7 @@ for doc in parse_namuwiki_json(1000, debug=False):
     scores = []
 
     #table
-    for i, table_text in enumerate(table_list_):    #분리된 문자열을 하나씩 가져옴
+    for i, table_text in enumerate(table_list_):    #||\n\n으로 분리된 문자열(document_str)을 하나씩 가져옴
         new_table_text = ''
         opened = False
         check1 = 1                                  #???
@@ -496,7 +518,9 @@ for doc in parse_namuwiki_json(1000, debug=False):
         #print(table_text) #전처리 된것
         print(scores[k])
         #print(table_list[k]) #전처리 안된 것
+        print("========\ntable_text")
         print(table_text)       #전처리 된 테이블 텍스트
+        print("table_text_over\n========")
 
         if "||||" in table_text:
             #print(table_text)
@@ -508,6 +532,7 @@ for doc in parse_namuwiki_json(1000, debug=False):
             (table2list2d(table_text))
         elif "||\n||" in table_text:
             (table2list2d(table_text))
+
         print("===" * 10)
 
     input()
