@@ -74,6 +74,9 @@ pattern_norm_01 = '\{\{\{#!folding [^\}\}\}]*\}\}\}'    #접기 문서
 #별도의 처리방법이 필요함
 pattern_ex_link = '\[\[[^\]\]]*\]\]'            #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
 
+#표의 시작과 끝 패턴
+pattern_chart = '\n+\|\|.*\|\|\n\n'
+
 #아직 처리방법이 정해지지 않은 패턴
 pattern_quote = '>+.*\n'                        #인용문
 pattern_age = '\[age\([^\)\]]*\)\]'             #YYYY-MM-DD형식으로 ()내에 입력하면 자동으로 만 나이 출력
@@ -121,6 +124,8 @@ pn01 = re.compile(pattern_norm_01)
 #pattern_norm_list = [pn00, pn01]
 
 pex_link = re.compile(pattern_ex_link)
+
+p_chrt = re.compile(pattern_chart, re.DOTALL)
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
@@ -287,14 +292,25 @@ def preprocess_norm_01(sentence):
 
     return sentence
 
+def preprocess_chart(sentence):
+    tokens = p_chrt.findall(sentence)
+
+    chart = []
+    for token in tokens:
+        chart.append(token)
+        emptyword = ''
+        sentence = sentence.replace(token, emptyword)
+
+    return sentence, chart
+
 def printlist(list_2):
     if len(list_2)!=0:
         print(list_2)
 
 
 def makelist(m,list_t1,list_2d):                #표 텍스트를 이용해서 리스트 생성
-    print('--------\nmakelist function')
-    print("before\n", list_t1)
+    # print('--------\nmakelist function')
+    # print("before\n", list_t1)
 
     if (m == 0) & (list_t1[m][0:4] == '||||'):  #row span인지 아닌지
         pass
@@ -345,15 +361,15 @@ def makelist(m,list_t1,list_2d):                #표 텍스트를 이용해서 �
                 elif list_t2[o + 6] != '':
                     list_t2[o] = list_t2[o + 6]
 
-    print("after\n", list_t1)
-    print("-------\n")
+    # print("after\n", list_t1)
+    # print("-------\n")
     list_2d.append(list_t2)
 
 
 
 def colspan(list_2d):
-    print('========\ncolspan function')
-    print('before\n', list_2d)
+    # print('========\ncolspan function')
+    # print('before\n', list_2d)
     for o in range(len(list_2d)):
         if (o!=0) and (o!=(len(list_2d)-1)): # 첫째행이 아니고 마지막 행이 아닐떄
             if len(list_2d[o])<len(list_2d[o-1]):
@@ -367,13 +383,13 @@ def colspan(list_2d):
             k = len(list_2d[o+1])-len(list_2d[o])
             for i in range(k):
                 list_2d[o].append(list_2d[o][len(list_2d[o])-1])
-    print('after\n', list_2d)
-    print('========\n')
+    # print('after\n', list_2d)
+    # print('========\n')
 
 
 def table2list2d(table_text):       #표를 2차원 리스트로 변경
     #print(table_text)
-    print('table')
+    #print('table')
     list_t1 = table_text.split('\n')
 
     list_2d1 = []                   #한 문서 내에 있는 여러 표를 리스트로 저장하기 위해서
@@ -386,7 +402,7 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
     for m, p in enumerate(list_t1):
         if (list_t1[m][0:2]!='||')and(list_t1[m][-2:]!='||'): #만약에 table_text의 첫번째 줄에 양쪽끝이 둘다 ||로 닫힌 경우가 아닌경우 : 테이블이 아닌경우
             if len(list_2d1)==0: #list_2d의 길이가 0인 경우
-                print("list_2d1 length : ", len(list_2d1))
+                #print("list_2d1 length : ", len(list_2d1))
                 #return list_2d #생각중, return 지우고 다른 list로 바꾸는 방법 생각해야
                 continue #생각중, 이거는 아마 가만 놔둬야 할 듯
             elif len(list_2d1)!=0: #list_2d가 0이 아닌 경우
@@ -422,25 +438,25 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
             makelist(m, list_t1, list_2d5)
             colspan(list_2d5)
 
-    print("========\nlist_2d1 : \n")
-    printlist(list_2d1)
-    print("\nlist_2d1\n========\n")
-
-    print("========\nlist_2d2 : \n")
-    printlist(list_2d2)
-    print("\nlist_2d2\n========\n")
-
-    print("========\nlist_2d3 : \n")
-    printlist(list_2d3)
-    print("\nlist_2d3\n========\n")
-
-    print("========\nlist_2d4 : \n")
-    printlist(list_2d4)
-    print("\nlist_2d4\n========\n")
-
-    print("========\nlist_2d5 : \n")
-    printlist(list_2d5)
-    print("\nlist_2d5\n========\n")
+    # print("========\nlist_2d1 : \n")
+    # printlist(list_2d1)
+    # print("\nlist_2d1\n========\n")
+    #
+    # print("========\nlist_2d2 : \n")
+    # printlist(list_2d2)
+    # print("\nlist_2d2\n========\n")
+    #
+    # print("========\nlist_2d3 : \n")
+    # printlist(list_2d3)
+    # print("\nlist_2d3\n========\n")
+    #
+    # print("========\nlist_2d4 : \n")
+    # printlist(list_2d4)
+    # print("\nlist_2d4\n========\n")
+    #
+    # print("========\nlist_2d5 : \n")
+    # printlist(list_2d5)
+    # print("\nlist_2d5\n========\n")
 
 
 #main code
@@ -471,9 +487,15 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     document_str = preprocess_link(document_str, pex_link)
 
-    # print("document_str_start")
-    # print(document_str)
-    # print("document_str_done\n")
+    document_str, chart = preprocess_chart(document_str)
+
+    print("========\ndocument_str_start")
+    print(document_str)
+    print("document_str_done\n========\n")
+
+    print("========\nchart_start")
+    print(chart)
+    print("chart_done\n========\n")
 
     document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환        ???
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
@@ -518,9 +540,9 @@ for doc in parse_namuwiki_json(1000, debug=False):
         #print(table_text) #전처리 된것
         print(scores[k])
         #print(table_list[k]) #전처리 안된 것
-        print("========\ntable_text")
-        print(table_text)       #전처리 된 테이블 텍스트
-        print("table_text_over\n========")
+        # print("========\ntable_text")
+        # print(table_text)       #전처리 된 테이블 텍스트
+        # print("table_text_over\n========")
 
         if "||||" in table_text:
             #print(table_text)
