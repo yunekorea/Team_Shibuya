@@ -80,7 +80,7 @@ pattern_age = '\[age\([^\)\]]*\)\]'             #YYYY-MM-DD형식으로 ()내에
 pattern_date = '\[date\]'                       #date, datetime : 현재 시각 출력
 pattern_datetime = '\[datetime\]'
 pattern_dday = '\[dday\([^\)\]]*\)\]'           #잔여일수, 경과일수 출력
-patternb = '\^\^[^\^\^]*\^\^'                   #위첨자
+patternb = '\^\^[^\^\^]*\^\^'                   #위첨자    위첨자 아래첨자는 모두 빼는걸로
 patternc = ',,[^,,]*,,'                         #아래첨자
 
 #정규 표현식 패턴 컴파일
