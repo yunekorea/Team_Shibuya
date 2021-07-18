@@ -42,30 +42,24 @@ pattern_sim_00 = '\'\'\' \'\''                  #강조 기울임 시작
 pattern_sim_01 = '\'\' \'\'\''                  #강조 기울임 끝
 pattern_sim_02 = '\'\'\''                       #'''문장''' : 강조문. '''만 제거하면 될 것이다
 pattern_sim_03 = '\'\''                         #기울임. pattern4 이후에 처리
-pattern_sim_04 = '\[목차\]'                       #목차 표시 지역
+pattern_sim_04 = '\[목차\]'                       #[목차] : 목차 표시 지역
 pattern_sim_05 = '\[tableofcontent\]'
-pattern_sim_06 = '\[각주\]'                       #각주 표시 지역
+pattern_sim_06 = '\[각주\]'                       #[각주] : 각주 표시 지역
 pattern_sim_07 = '\[footnote\]'
-pattern_sim_08 = '\[br\]'                       #줄바꿈
-pattern_sim_09 = '\[\[\.\./\]\]'                #현재 문서의 상위 문서 링크
-pattern_sim_10 = '-{4,9}'                       #4개에서 9개의 하이픈 -> 수평줄
-pattern_sim_11 = '\[clearfix\]'                 #CSS float 속성 초기화
+pattern_sim_08 = '\[br\]'                       #[br] : 줄바꿈
+pattern_sim_09 = '\[\[\.\./\]\]'                #[..\] : 현재 문서의 상위 문서 링크
+pattern_sim_10 = '-{4,9}'                       #---- : 4개에서 9개의 하이픈 -> 수평줄
+pattern_sim_11 = '\[clearfix\]'                 #[clearfix] : CSS float 속성 초기화
 
 
 #중간에 추가 글이 들어가는 패턴. 단순 삭제하기
-pattern_del_00 = '\[youtube\([^\)\]]*\)\]'      #youtube 링크
-pattern_del_01 = '\[kakaotv\([^\)\]]*\)\]'      #kakaotv 링크
-pattern_del_02 = '\[nicovideo\([^\)\]]*\)\]'    #nicovideo 링크
-pattern_del_03 = '\{\{\{#!html[^\}\}\}]*\}\}\}' #html 링크
-pattern_del_04 = '~~[^~~]*~~'                   #취소선 문장
-pattern_del_05 = '--[^--]*--'                   #취소선 문장
-pattern_del_06 = '\[[Ii]nclude\(.*\)\]'         #include
-pattern_del_07 = '\[\*[^\]]*\]'                 #각주. 현재는 내용 전체를 삭제하지만 이후에 살려야할수도 있음. *우측에 ' '없이 붙는 단어나 문장은 각주의 제목.
-pattern_del_08 = '=[=]+[^=]*=[=]+'              #문단 제목
-pattern_del_09 = '\[\[파일\:[^\]\]]*\]\]'        #파일 링크
-pattern_del_10 = '\[\[분류\:[^\]\]]*\]\]'        #분류
-pattern_del_11 = '\[\[https?://[^\|\]\]]*\]\]'  #외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
-
+pattern_del_00 = '\{\{\{#!html[^\}\}\}]*\}\}\}' #{{{#!html link }}} :  링크
+pattern_del_01 = '~~[^~~]*~~'                   #~~sentence~~ : 취소선 문장
+pattern_del_02 = '--[^--]*--'                   #--sentence-- : 취소선 문장
+pattern_del_03 = '=[=]+[^=]*=[=]+'              #== title == : 문단 제목
+pattern_del_04 = '\[\[파일\:[^\]\]]*\]\]'        #[[파일:link]] : 파일 링크
+pattern_del_05 = '\[\[분류\:[^\]\]]*\]\]'        #[[분류:link]] : 분류
+pattern_del_06 = '\[\[https?://[^\|\]\]]*\]\]'  #[[https?://link]] : 외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
 
 #중간에 추가 글이 들어가는 패턴. 표시된 부분만 삭제
 pattern_norm_00 = '__[^__]*__'                          #밑줄
@@ -74,8 +68,15 @@ pattern_norm_01 = '\{\{\{#!folding [^\}\}\}]*\}\}\}'    #접기 문서
 #별도의 처리방법이 필요함
 pattern_ex_link = '\[\[[^\]\]]*\]\]'            #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
 
+#링크 처리 이후로 처리하는 단순 삭제 패턴
+pattern_delal_00 = '\[[Ii]nclude\(.*\)\]'         #[include(sentence)] : include
+pattern_delal_01 = '\[youtube\([^\)\]]*\)\]'      #[youtube(link)] : youtube 링크
+pattern_delal_02 = '\[kakaotv\([^\)\]]*\)\]'      #[kakaotv(link)] : kakaotv 링크
+pattern_delal_03 = '\[nicovideo\([^\)\]]*\)\]'    #[nicovideo(link)] : nicovideo 링크
+pattern_delal_04 = '\[\*[^\]]*\]'                 #[* sentence] : 각주. 현재는 내용 전체를 삭제하지만 이후에 살려야할수도 있음. *우측에 ' '없이 붙는 단어나 문장은 각주의 제목.
+
 #표의 시작과 끝 패턴
-pattern_chart = '\n+\|\|.*\|\|\n\n'
+pattern_chart = '\n+\|\|.*\|\|\n+[^\|\|]'
 
 #아직 처리방법이 정해지지 않은 패턴
 pattern_quote = '>+.*\n'                        #인용문
@@ -112,18 +113,20 @@ pd03 = re.compile(pattern_del_03)
 pd04 = re.compile(pattern_del_04)
 pd05 = re.compile(pattern_del_05)
 pd06 = re.compile(pattern_del_06)
-pd07 = re.compile(pattern_del_07)
-pd08 = re.compile(pattern_del_08)
-pd09 = re.compile(pattern_del_09)
-pd10 = re.compile(pattern_del_10)
-pd11 = re.compile(pattern_del_11)
-pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06, pd07, pd08, pd09, pd10, pd11]
+pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06]
 
 pn00 = re.compile(pattern_norm_00)
 pn01 = re.compile(pattern_norm_01)
-#pattern_norm_list = [pn00, pn01]
+#pattern_norm_list = [pn00, pn01]       #각각 처리방법이 달라서 리스트로 묶지 않았음
 
 pex_link = re.compile(pattern_ex_link)
+
+pda00 = re.compile(pattern_delal_00)
+pda01 = re.compile(pattern_delal_01)
+pda02 = re.compile(pattern_delal_02)
+pda03 = re.compile(pattern_delal_03)
+pda04 = re.compile(pattern_delal_04)
+pattern_delal_list = [pda00, pda01, pda02, pda03, pda04]
 
 p_chrt = re.compile(pattern_chart, re.DOTALL)
 
@@ -297,6 +300,9 @@ def preprocess_chart(sentence):
 
     chart = []
     for token in tokens:
+        print("chart token")
+        print(token)
+        print("\n")
         chart.append(token)
         emptyword = ''
         sentence = sentence.replace(token, emptyword)
@@ -486,6 +492,9 @@ for doc in parse_namuwiki_json(1000, debug=False):
     document_str = preprocess_norm_01(document_str)
 
     document_str = preprocess_link(document_str, pex_link)
+
+    for pat in pattern_delal_list:
+        document_str = preprocess_delete(document_str, pat)
 
     document_str, chart = preprocess_chart(document_str)
 
