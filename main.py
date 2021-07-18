@@ -60,6 +60,8 @@ pattern_del_03 = '=[=]+[^=]*=[=]+'              #== title == : 문단 제목
 pattern_del_04 = '\[\[파일\:[^\]\]]*\]\]'        #[[파일:link]] : 파일 링크
 pattern_del_05 = '\[\[분류\:[^\]\]]*\]\]'        #[[분류:link]] : 분류
 pattern_del_06 = '\[\[https?://[^\|\]\]]*\]\]'  #[[https?://link]] : 외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
+pattern_del_07 = '\^\^[^\^\^]*\^\^'             #위첨자
+pattern_del_08 = ',,[^,,]*,,'                   #아래첨자
 
 #중간에 추가 글이 들어가는 패턴. 표시된 부분만 삭제
 pattern_norm_00 = '__[^__]*__'                          #밑줄
@@ -76,7 +78,9 @@ pattern_delal_03 = '\[nicovideo\([^\)\]]*\)\]'    #[nicovideo(link)] : nicovideo
 pattern_delal_04 = '\[\*[^\]]*\]'                 #[* sentence] : 각주. 현재는 내용 전체를 삭제하지만 이후에 살려야할수도 있음. *우측에 ' '없이 붙는 단어나 문장은 각주의 제목.
 
 #표의 시작과 끝 패턴
-pattern_chart = '\n+\|\|.*\|\|\n+[^\|\|]'
+pattern_chartend = '\|\|\n+[^\|]'
+pattern_chartnl = '\|\|\n\|\|'
+pattern_chart = '\|\|.*\|\[\{end\}\]\|'
 
 #아직 처리방법이 정해지지 않은 패턴
 pattern_quote = '>+.*\n'                        #인용문
@@ -84,8 +88,7 @@ pattern_age = '\[age\([^\)\]]*\)\]'             #YYYY-MM-DD형식으로 ()내에
 pattern_date = '\[date\]'                       #date, datetime : 현재 시각 출력
 pattern_datetime = '\[datetime\]'
 pattern_dday = '\[dday\([^\)\]]*\)\]'           #잔여일수, 경과일수 출력
-patternb = '\^\^[^\^\^]*\^\^'                   #위첨자    위첨자 아래첨자는 모두 빼는걸로
-patternc = ',,[^,,]*,,'                         #아래첨자
+
 
 #정규 표현식 패턴 컴파일
 p1 = re.compile(pattern1)
@@ -113,7 +116,9 @@ pd03 = re.compile(pattern_del_03)
 pd04 = re.compile(pattern_del_04)
 pd05 = re.compile(pattern_del_05)
 pd06 = re.compile(pattern_del_06)
-pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06]
+pd07 = re.compile(pattern_del_07)
+pd08 = re.compile(pattern_del_08)
+pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06, pd07, pd08]
 
 pn00 = re.compile(pattern_norm_00)
 pn01 = re.compile(pattern_norm_01)
@@ -128,7 +133,9 @@ pda03 = re.compile(pattern_delal_03)
 pda04 = re.compile(pattern_delal_04)
 pattern_delal_list = [pda00, pda01, pda02, pda03, pda04]
 
-p_chrt = re.compile(pattern_chart, re.DOTALL)
+p_chrtnd = re.compile(pattern_chartend)
+p_chrtnl = re.compile(pattern_chartnl)
+p_chrt = re.compile(pattern_chart)
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
@@ -161,47 +168,16 @@ def preprocess1(sentence, p):       #{{{와 }}}로 감싸진 부분 처리
 
         sentence = sentence.replace(token, new_word)
 
-    #print("preprocess1 sentence\n")
-    print(sentence)
-
     return sentence
 
 
 def preprocess2(sentence, p):
     tokens = p.findall(sentence)
-    #print(tokens)
     for token in tokens:
         new_word = token.replace('{x', '').replace('x}', '').split('|')[-1]
         sentence = sentence.replace(token, new_word)
 
     return sentence
-
-# def preprocess4(sentence, p):       #강조문 표시 삭제  (문장, 패턴)순서이며 이후에 한 함수로 변환해도 될 것 같음
-#     tokens = p.findall(sentence)
-#
-#     for token in tokens:
-#         new_word = token.replace('\'\'\'', '')
-#         sentence = sentence.replace(token, new_word)
-#
-#     return sentence
-
-# def preprocess5(sentence, p):       #취소선 텍스트 삭제
-#     tokens = p.findall(sentence)
-#
-#     for token in tokens:
-#         emptywords = ''
-#         sentence = sentence.replace(token, emptywords)
-#
-#     return sentence
-#
-# def preprocess6(sentence, p):       #사진 등 파일이 링크돼있는 텍스트. 삭제 수행
-#     tokens = p.findall(sentence)
-#
-#     for token in tokens:
-#         emptywords = ''
-#         sentence = sentence.replace(token, emptywords)
-#
-#     return sentence
 
 def preprocess_link(sentence, p):       #하이퍼링크 정리('|'로 나뉘어져 있는 텍스트에서 우측의 원본만을 추출하고 좌측의 링크된 문서 제목은 삭제)
     tokens = p.findall(sentence)
@@ -214,60 +190,6 @@ def preprocess_link(sentence, p):       #하이퍼링크 정리('|'로 나뉘어
 
     return sentence
 
-# def preprocess8(sentence, p):
-#     tokens = p.findall(sentence)
-#
-#     for token in tokens:
-#         emptywords = ''
-#         sentence = sentence.replace(token, emptywords)
-#
-#     return sentence
-#
-# def preprocess9(sentence, p):
-#     tokens = p.findall(sentence)
-#
-#     for token in tokens:
-#         emptywords = ''
-#         sentence = sentence.replace(token, emptywords)
-#
-#     return sentence
-#
-# def preprocess10(sentence, p):
-#     tokens = p.findall(sentence)
-#
-#     for token in tokens:
-#         emptywords = ''
-#         sentence = sentence.replace(token, emptywords)
-#
-#     return sentence
-#
-# def preprocess11(sentence, p):
-#     tokens = p.findall(sentence)
-#
-#     for token in tokens:
-#         emptywords = ''
-#         sentence = sentence.replace(token, emptywords)
-#
-#     return sentence
-#
-# def preprocess12(sentence, p):
-#     tokens = p.findall(sentence)
-#
-#     for token in tokens:
-#         emptywords = ''
-#         sentence = sentence.replace(token, emptywords)
-#
-#     return sentence
-#
-# def preprocess13(sentence, p):
-#     tokens = p.findall(sentence)
-#
-#     for token in tokens:
-#         emptywords = ''
-#         sentence = sentence.replace(token, emptywords)
-#
-#     return sentence
-
 def preprocess_delete(sentence, p):
     tokens = p.findall(sentence)
 
@@ -277,7 +199,7 @@ def preprocess_delete(sentence, p):
 
     return sentence
 
-def preprocess_norm_00(sentence):
+def preprocess_norm_00(sentence):       #밑줄 제거
     tokens = pn00.findall(sentence)
 
     for token in tokens:
@@ -286,7 +208,7 @@ def preprocess_norm_00(sentence):
 
     return sentence
 
-def preprocess_norm_01(sentence):
+def preprocess_norm_01(sentence):       #접기기능 제거
     tokens = pn01.findall(sentence)
 
     for token in tokens:
@@ -295,14 +217,32 @@ def preprocess_norm_01(sentence):
 
     return sentence
 
-def preprocess_chart(sentence):
+def preprocess_chartend(sentence):      #표에서 맨 마지막 부분을 다른 개행 문자와 구분짓기
+    tokens = p_chrtnd.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('||\n', '|[{end}]|\n')
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+def preprocess_chartnl(sentence):       #표에서 개행 문자(\n)를 다른 텍스트로 변경
+    tokens = p_chrtnl.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('||\n||', '|| [{nl}] ||')
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+def preprocess_chart(sentence):         #표와 일반 텍스트를 분리시킴
     tokens = p_chrt.findall(sentence)
 
     chart = []
     for token in tokens:
-        print("chart token")
-        print(token)
-        print("\n")
+        # print("chart token")
+        # print(token)
+        # print("\n")
         chart.append(token)
         emptyword = ''
         sentence = sentence.replace(token, emptyword)
@@ -496,6 +436,12 @@ for doc in parse_namuwiki_json(1000, debug=False):
     for pat in pattern_delal_list:
         document_str = preprocess_delete(document_str, pat)
 
+    document_str = document_str.replace('{{{', '{z').replace('}}}', 'z}')
+    document_str = preprocess1(document_str, p2) #전처리1 {{{}}}
+
+    document_str = preprocess_chartend(document_str)
+    document_str = preprocess_chartnl(document_str)
+
     document_str, chart = preprocess_chart(document_str)
 
     print("========\ndocument_str_start")
@@ -508,9 +454,6 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환        ???
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
-    print("table list\n")
-    print(table_list_)
-    print("--------done-------\n")
     table_list = []
     scores = []
 
@@ -540,24 +483,21 @@ for doc in parse_namuwiki_json(1000, debug=False):
     #print('title:', doc['title']) #title 출력
 
     for k, table_text in enumerate(table_list):  #dictionary와 비슷, key값과 value값
-        table_text = table_text.replace('{{{', '{z').replace('}}}', 'z}').replace('[[', '{x').replace(']]', 'x}')   #[[]] : 하이퍼링크 단어
+        table_text = table_text.replace('[[', '{x').replace(']]', 'x}')   #[[]] : 하이퍼링크 단어
         table_text = re.sub(pattern=pattern1, repl='', string=table_text)  #특수문자 제거
-        table_text = preprocess1(table_text, p2) #전처리1 {{{}}}
         table_text = preprocess2(table_text, p3) #전처리2 [[]]
         #print(table_text)
 
         #print(table_text) #전처리 된것
-        print(scores[k])
+        #print(scores[k])
         #print(table_list[k]) #전처리 안된 것
         # print("========\ntable_text")
         # print(table_text)       #전처리 된 테이블 텍스트
         # print("table_text_over\n========")
 
         if "||||" in table_text:
-            #print(table_text)
             (table2list2d(table_text))
         elif "|| '" in table_text:
-            #print(table_text)
             (table2list2d(table_text))
         elif "|| " in table_text:
             (table2list2d(table_text))
