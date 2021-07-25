@@ -1,4 +1,5 @@
 import ijson
+import json
 import re
 
 capture_values = [
@@ -7,6 +8,7 @@ capture_values = [
     ("item.text", "string")
 ]
 
+wiki_group = dict()
 
 def parse_namuwiki_json(limit=-1, debug=False):
     i = 0
@@ -26,6 +28,18 @@ def parse_namuwiki_json(limit=-1, debug=False):
                 if limit > 0 and i >= limit:
                     break
 
+def savePreprocessedJson(title, text, table):
+    document = dict()
+    document["title"] = title
+    document["text"] = text
+    document["table"] = table
+    with open('processedWiki.json', 'r') as wiki:
+        wikiData = json.load(wiki)
+        #json.dump(document, wiki)
+        wikiData.append(document)
+
+    with open('processedWiki.json', 'w', encoding = 'utf-8') as wiki:
+        wiki.dump(wikiData, wiki)
 
 #정규 표현식
 
@@ -64,8 +78,9 @@ pattern_del_07 = '\^\^[^\^\^]*\^\^'             #위첨자
 pattern_del_08 = ',,[^,,]*,,'                   #아래첨자
 
 #중간에 추가 글이 들어가는 패턴. 표시된 부분만 삭제
-pattern_norm_00 = '__[^__]*__'                          #밑줄
-pattern_norm_01 = '\{\{\{#!folding [^\}\}\}]*\}\}\}'    #접기 문서
+pattern_norm_00 = '__[^__]*__'                                                  #밑줄
+pattern_norm_01 = '\{\{\{#[^(\}\}\})]*\}\}\}'                      #글의 색 변경하는 패턴
+pattern_norm_02 = '\{\{\{#!folding [^\}\}\}]*\}\}\}'                            #접기 문서
 
 #별도의 처리방법이 필요함
 pattern_ex_link = '\[\[[^\]\]]*\]\]'            #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
@@ -78,17 +93,20 @@ pattern_delal_03 = '\[nicovideo\([^\)\]]*\)\]'    #[nicovideo(link)] : nicovideo
 pattern_delal_04 = '\[\*[^\]]*\]'                 #[* sentence] : 각주. 현재는 내용 전체를 삭제하지만 이후에 살려야할수도 있음. *우측에 ' '없이 붙는 단어나 문장은 각주의 제목.
 
 #표의 시작과 끝 패턴
-pattern_chartend = '\|\|\n+[^\|]'
-pattern_chartnl = '\|\|\n\|\|'
-pattern_chart = '\|\|.*\|\[\{end\}\]\|'
+pattern_tableend = '\|\|\n+[^\|]'               #표의 마지막 부분. 이후에 preprocess_chartend함수에서 |[{end}]|로 변경
+pattern_tablenl = '\|\|\n\|\|'                  #표의 마지막 부분이 아니며 개행문자가 있음. 이후에 preprocess_chartnl함수에서 || [{nl}] ||로 변경
+pattern_table = '\|\|.*\|\[\{end\}\]\|'         #preprocess_chartend함수에서 변경된 부분을 포함한 한 표의 전체를 인지하는 패턴
 
 #아직 처리방법이 정해지지 않은 패턴
 pattern_quote = '>+.*\n'                        #인용문
 pattern_age = '\[age\([^\)\]]*\)\]'             #YYYY-MM-DD형식으로 ()내에 입력하면 자동으로 만 나이 출력
 pattern_date = '\[date\]'                       #date, datetime : 현재 시각 출력
 pattern_datetime = '\[datetime\]'
-pattern_dday = '\[dday\([^\)\]]*\)\]'           #잔여일수, 경과일수 출력
+pattern_dday = '\[dday\([^\)\]]*\)\]'           #잔여일수, 경과일수 출력 : 우리 모델에서 의미가 있는가?
 
+#표 분리 후 table패턴 원상복귀 시키는 패턴
+pattern_return_nl = '\| \[\{nl\}\] \|'
+pattern_return_end = '\|\[\{end\}\]\|'
 
 #정규 표현식 패턴 컴파일
 p1 = re.compile(pattern1)
@@ -122,6 +140,7 @@ pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06, pd07, pd08]
 
 pn00 = re.compile(pattern_norm_00)
 pn01 = re.compile(pattern_norm_01)
+pn02 = re.compile(pattern_norm_02)
 #pattern_norm_list = [pn00, pn01]       #각각 처리방법이 달라서 리스트로 묶지 않았음
 
 pex_link = re.compile(pattern_ex_link)
@@ -133,9 +152,13 @@ pda03 = re.compile(pattern_delal_03)
 pda04 = re.compile(pattern_delal_04)
 pattern_delal_list = [pda00, pda01, pda02, pda03, pda04]
 
-p_chrtnd = re.compile(pattern_chartend)
-p_chrtnl = re.compile(pattern_chartnl)
-p_chrt = re.compile(pattern_chart)
+p_tableend = re.compile(pattern_tableend)
+p_tablenl = re.compile(pattern_tablenl)
+p_table = re.compile(pattern_table)
+
+p_return_nl = re.compile(pattern_return_nl)
+p_return_end = re.compile(pattern_return_end)
+
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
@@ -208,8 +231,28 @@ def preprocess_norm_00(sentence):       #밑줄 제거
 
     return sentence
 
-def preprocess_norm_01(sentence):       #접기기능 제거
+def preprocess_norm_01(sentence):       #글 색 변경 패턴 제거
     tokens = pn01.findall(sentence)
+
+    for token in tokens:
+        print("norm01_tokens\n", token)
+        tk = token.split(' ')
+        new_word = ''
+
+        for j in range(1, len(tk)):
+            new_word += tk[j] + ' '
+        #new_word = new_word.strip().replace('}}}', '').replace('{{{', '')
+        new_word = new_word.replace('}}}', '')
+        print("new_word\n", new_word)
+        print("==========\n")
+
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+
+def preprocess_norm_02(sentence):       #접기기능 제거
+    tokens = pn02.findall(sentence)
 
     for token in tokens:
         new_word = token.replace('{{{#!folding ', '').replace('}}}', '')
@@ -217,17 +260,9 @@ def preprocess_norm_01(sentence):       #접기기능 제거
 
     return sentence
 
-def preprocess_chartend(sentence):      #표에서 맨 마지막 부분을 다른 개행 문자와 구분짓기
-    tokens = p_chrtnd.findall(sentence)
 
-    for token in tokens:
-        new_word = token.replace('||\n', '|[{end}]|\n')
-        sentence = sentence.replace(token, new_word)
-
-    return sentence
-
-def preprocess_chartnl(sentence):       #표에서 개행 문자(\n)를 다른 텍스트로 변경
-    tokens = p_chrtnl.findall(sentence)
+def preprocess_tablenl(sentence):       #표에서 개행 문자(\n)를 다른 텍스트로 변경
+    tokens = p_tablenl.findall(sentence)
 
     for token in tokens:
         new_word = token.replace('||\n||', '|| [{nl}] ||')
@@ -235,19 +270,43 @@ def preprocess_chartnl(sentence):       #표에서 개행 문자(\n)를 다른 �
 
     return sentence
 
-def preprocess_chart(sentence):         #표와 일반 텍스트를 분리시킴
-    tokens = p_chrt.findall(sentence)
+def preprocess_tableend(sentence):      #표에서 맨 마지막 부분을 다른 개행 문자와 구분짓기
+    tokens = p_tableend.findall(sentence)
 
-    chart = []
     for token in tokens:
-        # print("chart token")
-        # print(token)
-        # print("\n")
-        chart.append(token)
+        new_word = token.replace('||\n', '|[{end}]|\n')
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+def preprocess_table(sentence):         #표와 일반 텍스트를 분리시킴
+    tokens = p_table.findall(sentence)
+
+    table = []
+    for token in tokens:
+        table.append(token)
         emptyword = ''
         sentence = sentence.replace(token, emptyword)
 
-    return sentence, chart
+    return sentence, table
+
+def preprocess_return_nl(sentence):
+    tokens = p_return_nl.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('| [{nl}] |', '||\n||')
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+def preprocess_return_end(sentence):
+    tokens = p_return_end.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('|[{end}]|', '||\n\n')
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
 
 def printlist(list_2):
     if len(list_2)!=0:
@@ -405,6 +464,7 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
     # print("\nlist_2d5\n========\n")
 
 
+count = 0
 #main code
 for doc in parse_namuwiki_json(1000, debug=False):
     document_title = str(doc['title'])
@@ -430,27 +490,33 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     document_str = preprocess_norm_00(document_str)
     document_str = preprocess_norm_01(document_str)
+    document_str = preprocess_norm_02(document_str)
 
     document_str = preprocess_link(document_str, pex_link)
 
     for pat in pattern_delal_list:
         document_str = preprocess_delete(document_str, pat)
 
-    document_str = document_str.replace('{{{', '{z').replace('}}}', 'z}')
-    document_str = preprocess1(document_str, p2) #전처리1 {{{}}}
+    #document_str = document_str.replace('{{{', '{z').replace('}}}', 'z}')
+    #document_str = preprocess1(document_str, p2) #전처리1 {{{}}}
 
-    document_str = preprocess_chartend(document_str)
-    document_str = preprocess_chartnl(document_str)
+    document_str = preprocess_tableend(document_str)
+    document_str = preprocess_tablenl(document_str)
 
-    document_str, chart = preprocess_chart(document_str)
+    document_str, table = preprocess_table(document_str)
 
-    print("========\ndocument_str_start")
-    print(document_str)
-    print("document_str_done\n========\n")
+    for i in range(len(table)):
+        table[i] = preprocess_return_nl(table[i])
+        table[i] = preprocess_return_end(table[i])
+        print(table[i])
 
-    print("========\nchart_start")
-    print(chart)
-    print("chart_done\n========\n")
+    # print("========\ndocument_str_start")
+    # print(document_str)
+    # print("document_str_done\n========\n")
+
+    # print("========\ntable_start")
+    # print(table)
+    # print("chart_done\n========\n")
 
     document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환        ???
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
@@ -506,5 +572,9 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
         print("===" * 10)
 
-    input()
+    savePreprocessedJson(document_title, document_str, table)
+    count += 1
+    if (count>5):
+        break
+    #input()
 
