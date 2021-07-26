@@ -10,6 +10,10 @@ capture_values = [
 
 wiki_group = dict()
 
+initialList = [{"title":"0", "text":"initial", "table":" "}]
+with open('processedWiki.json', 'w', encoding = 'utf-8') as initial:
+    json.dump(initialList, initial)
+
 def parse_namuwiki_json(limit=-1, debug=False):
     i = 0
     doc = {}
@@ -33,13 +37,16 @@ def savePreprocessedJson(title, text, table):
     document["title"] = title
     document["text"] = text
     document["table"] = table
-    with open('processedWiki.json', 'r') as wiki:
+    print("savePreprocessedJson")
+    print(table)
+    print("========done=======\n")
+    with open('processedWiki.json', 'r+', encoding = 'utf-8') as wiki:
         wikiData = json.load(wiki)
-        #json.dump(document, wiki)
         wikiData.append(document)
+        wiki.seek(0)
+        json.dump(wikiData, wiki)
+        #json.dump(document, wiki)
 
-    with open('processedWiki.json', 'w', encoding = 'utf-8') as wiki:
-        wiki.dump(wikiData, wiki)
 
 #정규 표현식
 
@@ -202,8 +209,8 @@ def preprocess2(sentence, p):
 
     return sentence
 
-def preprocess_link(sentence, p):       #하이퍼링크 정리('|'로 나뉘어져 있는 텍스트에서 우측의 원본만을 추출하고 좌측의 링크된 문서 제목은 삭제)
-    tokens = p.findall(sentence)
+def preprocess_link(sentence, p):       #하이퍼링크 정리
+    tokens = p.findall(sentence)        #('|'로 나뉘어져 있는 텍스트에서 우측의 원본만을 추출하고 좌측의 링크된 문서 제목은 삭제)
 
     for token in tokens:
         new_word = token.replace('[[', '').replace(']]', '').split('|')
@@ -235,7 +242,7 @@ def preprocess_norm_01(sentence):       #글 색 변경 패턴 제거
     tokens = pn01.findall(sentence)
 
     for token in tokens:
-        print("norm01_tokens\n", token)
+        #print("norm01_tokens\n", token)
         tk = token.split(' ')
         new_word = ''
 
@@ -243,8 +250,8 @@ def preprocess_norm_01(sentence):       #글 색 변경 패턴 제거
             new_word += tk[j] + ' '
         #new_word = new_word.strip().replace('}}}', '').replace('{{{', '')
         new_word = new_word.replace('}}}', '')
-        print("new_word\n", new_word)
-        print("==========\n")
+        #print("new_word\n", new_word)
+        #print("==========\n")
 
         sentence = sentence.replace(token, new_word)
 
@@ -508,7 +515,7 @@ for doc in parse_namuwiki_json(1000, debug=False):
     for i in range(len(table)):
         table[i] = preprocess_return_nl(table[i])
         table[i] = preprocess_return_end(table[i])
-        print(table[i])
+        #print(table[i])
 
     # print("========\ndocument_str_start")
     # print(document_str)
