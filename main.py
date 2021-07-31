@@ -36,10 +36,8 @@ def savePreprocessedJson(title, text, table):
     document = dict()
     document["title"] = title
     document["text"] = text
-    document["table"] = table
-    print("savePreprocessedJson")
-    print(table)
-    print("========done=======\n")
+    table_json = json.dumps(table, ensure_ascii=False)
+    document["table"] = table_json
     with open('processedWiki.json', 'r+', encoding = 'utf-8') as wiki:
         wikiData = json.load(wiki)
         wikiData.append(document)
@@ -52,7 +50,7 @@ def savePreprocessedJson(title, text, table):
 
 #리다이렉트 문서일 경우 해당 패턴으로 시작함. 해당 문서 전체 삭제가 필요.
 # pattern_redirect_00 = "#redirect"
-# pattern_redirect_01 = "#넘겨주기"
+# pattern_redirect_01 = "#넘겨주기"             #정규식이 없어도 .startswith()로 처리 가능. redirect_check 함수 참조
 
 pattern1 = '<[^>]*>'
 pattern2 = '{z[^z}]*z}'                 #'{{{' -> '{z' / '}}}' -> 'z}'
@@ -71,26 +69,28 @@ pattern_sim_08 = '\[br\]'                       #[br] : 줄바꿈
 pattern_sim_09 = '\[\[\.\./\]\]'                #[..\] : 현재 문서의 상위 문서 링크
 pattern_sim_10 = '-{4,9}'                       #---- : 4개에서 9개의 하이픈 -> 수평줄
 pattern_sim_11 = '\[clearfix\]'                 #[clearfix] : CSS float 속성 초기화
+#pattern_sim_12 = '\[ 펼치기 · 접기 \]'             # '#!folding'에 추가로 들어가는 글
 
 
 #중간에 추가 글이 들어가는 패턴. 단순 삭제하기
-pattern_del_00 = '\{\{\{#!html[^\}\}\}]*\}\}\}' #{{{#!html link }}} :  링크
+pattern_del_00 = '\{\{\{#!html[^\{\}]*\}\}\}' #{{{#!html link }}} :  링크
 pattern_del_01 = '~~[^~~]*~~'                   #~~sentence~~ : 취소선 문장
 pattern_del_02 = '--[^--]*--'                   #--sentence-- : 취소선 문장
 pattern_del_03 = '=[=]+[^=]*=[=]+'              #== title == : 문단 제목
-pattern_del_04 = '\[\[파일\:[^\]\]]*\]\]'        #[[파일:link]] : 파일 링크
-pattern_del_05 = '\[\[분류\:[^\]\]]*\]\]'        #[[분류:link]] : 분류
-pattern_del_06 = '\[\[https?://[^\|\]\]]*\]\]'  #[[https?://link]] : 외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
+pattern_del_04 = '\[\[파일\:[^\[\]]*\]\]'        #[[파일:link]] : 파일 링크
+pattern_del_05 = '\[\[분류\:[^\[\]]*\]\]'        #[[분류:link]] : 분류
+pattern_del_06 = '\[\[https?://[^\|\[\]]*\]\]'  #[[https?://link]] : 외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
 pattern_del_07 = '\^\^[^\^\^]*\^\^'             #위첨자
 pattern_del_08 = ',,[^,,]*,,'                   #아래첨자
 
 #중간에 추가 글이 들어가는 패턴. 표시된 부분만 삭제
-pattern_norm_00 = '__[^__]*__'                                                  #밑줄
-pattern_norm_01 = '\{\{\{#[^(\}\}\})]*\}\}\}'                      #글의 색 변경하는 패턴
-pattern_norm_02 = '\{\{\{#!folding [^\}\}\}]*\}\}\}'                            #접기 문서
+pattern_norm_00 = '__[^__]*__'                                  #밑줄
+pattern_norm_01 = '\{\{\{[#\+][^!\{\}][^\{\}]*\}\}\}'           #+ : 글의 크기 변경 / # : 글의 색 변경
+#pattern_norm_02 = '\{\{\{#[^\{\}]*\}\}\}'                      #글의 색 변경하는 패턴
+pattern_norm_03 = '\{\{\{#!folding \[[^\]*\][^\{\}]*\}\}\}'              #접기 문서
 
 #별도의 처리방법이 필요함
-pattern_ex_link = '\[\[[^\]\]]*\]\]'            #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
+pattern_ex_link = '\[\[[^\[\]]*\]\]'            #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
 
 #링크 처리 이후로 처리하는 단순 삭제 패턴
 pattern_delal_00 = '\[[Ii]nclude\(.*\)\]'         #[include(sentence)] : include
@@ -112,8 +112,12 @@ pattern_datetime = '\[datetime\]'
 pattern_dday = '\[dday\([^\)\]]*\)\]'           #잔여일수, 경과일수 출력 : 우리 모델에서 의미가 있는가?
 
 #표 분리 후 table패턴 원상복귀 시키는 패턴
-pattern_return_nl = '\| \[\{nl\}\] \|'
+pattern_return_nl = '\|\| \[\{nl\}\] \|\|'
 pattern_return_end = '\|\[\{end\}\]\|'
+
+#표 분리 후 남는 residue 처리하기 위한 패턴
+pattern_residue_00 = '\|\|'
+pattern_residue_01 = '\|\[\{end\}\]\|'
 
 #정규 표현식 패턴 컴파일
 p1 = re.compile(pattern1)
@@ -132,9 +136,10 @@ ps08 = re.compile(pattern_sim_08)
 ps09 = re.compile(pattern_sim_09)
 ps10 = re.compile(pattern_sim_10)
 ps11 = re.compile(pattern_sim_11)
+#ps12 = re.compile(pattern_sim_12)
 pattern_sim_list = [ps00, ps01, ps02, ps03, ps04, ps05, ps06, ps07, ps08, ps09, ps10, ps11]
 
-pd00 = re.compile(pattern_del_00)
+pd00 = re.compile(pattern_del_00, re.DOTALL.I)
 pd01 = re.compile(pattern_del_01)
 pd02 = re.compile(pattern_del_02)
 pd03 = re.compile(pattern_del_03)
@@ -147,7 +152,8 @@ pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06, pd07, pd08]
 
 pn00 = re.compile(pattern_norm_00)
 pn01 = re.compile(pattern_norm_01)
-pn02 = re.compile(pattern_norm_02)
+#pn02 = re.compile(pattern_norm_02)
+pn03 = re.compile(pattern_norm_03)
 #pattern_norm_list = [pn00, pn01]       #각각 처리방법이 달라서 리스트로 묶지 않았음
 
 pex_link = re.compile(pattern_ex_link)
@@ -166,6 +172,9 @@ p_table = re.compile(pattern_table)
 p_return_nl = re.compile(pattern_return_nl)
 p_return_end = re.compile(pattern_return_end)
 
+p_re_00 = re.compile(pattern_residue_00)
+p_re_01 = re.compile(pattern_residue_01)
+pattern_residue_list = [p_re_00, p_re_01]
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
@@ -238,30 +247,50 @@ def preprocess_norm_00(sentence):       #밑줄 제거
 
     return sentence
 
-def preprocess_norm_01(sentence):       #글 색 변경 패턴 제거
-    tokens = pn01.findall(sentence)
+def preprocess_norm_01(sentence):
+    temp = sentence
+    tokens = pn01.findall(temp)
 
-    for token in tokens:
-        #print("norm01_tokens\n", token)
-        tk = token.split(' ')
-        new_word = ''
+    while(tokens!=[]):
+        for token in tokens:
+            # print("norm_01_token : \n", token)
+            # print("token_done\n")
+            tk = token.split(' ')
+            new_word = ''
 
-        for j in range(1, len(tk)):
-            new_word += tk[j] + ' '
-        #new_word = new_word.strip().replace('}}}', '').replace('{{{', '')
-        new_word = new_word.replace('}}}', '')
-        #print("new_word\n", new_word)
-        #print("==========\n")
+            for j in range(1, len(tk)):
+                new_word += tk[j] + ' '
+            new_word = new_word.replace('}}}', '')
+            temp = temp.replace(token, new_word)
 
-        sentence = sentence.replace(token, new_word)
+        tokens = pn01.findall(temp)
 
+    sentence = temp
     return sentence
 
+# def preprocess_norm_02(sentence):       #글 색 변경 패턴 제거
+#     tokens = pn02.findall(sentence)
+#
+#     for token in tokens:
+#         #print("norm01_tokens\n", token)
+#         tk = token.split(' ')
+#         new_word = ''
+#
+#         for j in range(1, len(tk)):
+#             new_word += tk[j] + ' '
+#         new_word = new_word.replace('}}}', '')
+#
+#         sentence = sentence.replace(token, new_word)
+#
+#     return sentence
 
-def preprocess_norm_02(sentence):       #접기기능 제거
-    tokens = pn02.findall(sentence)
+
+def preprocess_norm_03(sentence):       #접기기능 제거
+    tokens = pn03.findall(sentence)
 
     for token in tokens:
+        print("norm_03_token : \n", token)
+        print("token_done\n")
         new_word = token.replace('{{{#!folding ', '').replace('}}}', '')
         sentence = sentence.replace(token, new_word)
 
@@ -301,7 +330,7 @@ def preprocess_return_nl(sentence):
     tokens = p_return_nl.findall(sentence)
 
     for token in tokens:
-        new_word = token.replace('| [{nl}] |', '||\n||')
+        new_word = token.replace('|| [{nl}] ||', '||\n||')
         sentence = sentence.replace(token, new_word)
 
     return sentence
@@ -373,10 +402,69 @@ def makelist(m,list_t1,list_2d):                #표 텍스트를 이용해서 �
                 elif list_t2[o + 6] != '':
                     list_t2[o] = list_t2[o + 6]
 
-    # print("after\n", list_t1)
+    #print("list_t2\n", list_t2)
     # print("-------\n")
     list_2d.append(list_t2)
 
+def makelist_new(list_t1,list_2d):                #표 텍스트를 이용해서 리스트 생성
+    # print('--------\nmakelist function')
+    # print("before\n", list_t1)
+
+    print("list_t1\n", list_t1)
+
+
+    if (list_t1[0:4] == '||||'):  #row span인지 아닌지
+        pass
+    elif list_t1[0:6] == '||||||':           #|||||| -> ||||
+        list_t1 = list_t1[4:]
+    elif list_t1[0:2] == '||':               #row span이 아니며 ||로 시작하는 경우 -> ||삭제
+        list_t1 = list_t1[2:]
+
+    if list_t1[-2:] == '||':                 #끝부분의 || 삭제
+        list_t1 = list_t1[:-2]
+
+    if '||||||||||||||||' in list_t1:        #|*16
+        a = 1
+    elif '||||||||||||||' in list_t1:        #|*14
+        a = 2
+    elif '||||||||||' in list_t1:            #|*10
+        a = 3
+    elif '||||||' in list_t1:                #|*6
+        a = 4
+    elif '||||' in list_t1:                  #|*4
+        a = 5
+    else:
+        a = 0
+        # elif '||||' in list_t1[m]:
+        #    a=True
+
+    list_t2 = list_t1.split('||')  # 첫번째 나누기 : column에 따라 나누는 것, str -> list, rowspan 처리
+
+    # for l, k in enumerate(list_t2):
+    #    if "||||" in k:
+    #        list_t2[l] = k.split('|||') #두번째 나누기 : ||||에 따라 나누기, 리스
+    # print(list_t2)
+    if a != 0:      #a가 0이 아닌 경우가 무엇인가???
+        # print(a)
+        for o, word in enumerate(list_t2):
+            if word == '':
+                if list_t2[o + 1] != '':
+                    list_t2[o] = list_t2[o + 1]
+                    # print(list_t2[o])
+                elif list_t2[o + 2] != '':
+                    list_t2[o] = list_t2[o + 2]
+                elif list_t2[o + 3] != '':
+                    list_t2[o] = list_t2[o + 3]
+                elif list_t2[o + 4] != '':
+                    list_t2[o] = list_t2[o + 4]
+                elif list_t2[o + 5] != '':
+                    list_t2[o] = list_t2[o + 5]
+                elif list_t2[o + 6] != '':
+                    list_t2[o] = list_t2[o + 6]
+
+    # print("after\n", list_t1)
+    # print("-------\n")
+    list_2d.append(list_t2)
 
 
 def colspan(list_2d):
@@ -409,8 +497,11 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
     list_2d3 = []
     list_2d4 = []
     list_2d5 = []
+    list_2d_temp = []
+    list_2d = []
 
     nextlistswitch = 0              #한 문서 내에 여러 리스트가 있는 경우 다음
+    listIndex = 0
     for m, p in enumerate(list_t1):
         if (list_t1[m][0:2]!='||')and(list_t1[m][-2:]!='||'): #만약에 table_text의 첫번째 줄에 양쪽끝이 둘다 ||로 닫힌 경우가 아닌경우 : 테이블이 아닌경우
             if len(list_2d1)==0: #list_2d의 길이가 0인 경우
@@ -450,6 +541,12 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
             makelist(m, list_t1, list_2d5)
             colspan(list_2d5)
 
+    # makelist(m, list_t1, list_2d)
+    # colspan(list_2d)
+    # print("list_2d\n", list_2d)
+    #
+    # return list_2d
+
     # print("========\nlist_2d1 : \n")
     # printlist(list_2d1)
     # print("\nlist_2d1\n========\n")
@@ -470,6 +567,8 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
     # printlist(list_2d5)
     # print("\nlist_2d5\n========\n")
 
+    return list_2d1
+
 
 count = 0
 #main code
@@ -478,14 +577,13 @@ for doc in parse_namuwiki_json(1000, debug=False):
     document_str = str(doc['text'])
 
     isRedirect = redirect_check(document_str)   #doc가 리다이렉트 문서인지 여부를 저장
-    #print("redirect : ", isRedirect)
     if(isRedirect == True):                     #doc가 리다이렉트 문서일 경우
         continue                                #이하의 처리 코드를 모두 건너뛰고 다음 doc으로 이동
 
-    print('\n---------------------------------------\n')
-    print('Document')
-    print('title:', document_title)  # title 출력
-    print('\n--------text--------\n')
+    print('\n================')
+    print('--------title--------')
+    print(document_title)  # title 출력
+    print('----------------\n')
 
     document_str = preprocess0(document_str, p1)
 
@@ -497,7 +595,8 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     document_str = preprocess_norm_00(document_str)
     document_str = preprocess_norm_01(document_str)
-    document_str = preprocess_norm_02(document_str)
+    # document_str = preprocess_norm_02(document_str)
+    document_str = preprocess_norm_03(document_str)
 
     document_str = preprocess_link(document_str, pex_link)
 
@@ -517,13 +616,14 @@ for doc in parse_namuwiki_json(1000, debug=False):
         table[i] = preprocess_return_end(table[i])
         #print(table[i])
 
-    # print("========\ndocument_str_start")
-    # print(document_str)
-    # print("document_str_done\n========\n")
+    for pat in pattern_residue_list:
+        document_str = preprocess_delete(document_str, pat)
 
-    # print("========\ntable_start")
-    # print(table)
-    # print("chart_done\n========\n")
+    print("--------document_str_start--------\n")
+    print(document_str)
+    print("--------document_str_done--------\n")
+
+
 
     document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환        ???
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
@@ -549,39 +649,43 @@ for doc in parse_namuwiki_json(1000, debug=False):
             if opened is True:                                              #표의 행이 시작됐을 때
                 new_table_text += table_text[j]                             #테이블 텍스트에 삽입하기 시작함
 
+
         if opened is True:
             table_list.append(new_table_text)
             scores.append(check1 / check2)                                  #???
 
-    #print('title:', doc['title']) #title 출력
+    table_result = []
+    # for k, table_text in enumerate(table_list):  #dictionary와 비슷, key값과 value값
+    #     table_text = table_text.replace('[[', '{x').replace(']]', 'x}')   #[[]] : 하이퍼링크 단어
+    #     table_text = re.sub(pattern=pattern1, repl='', string=table_text)  #특수문자 제거
+    #     table_text = preprocess2(table_text, p3) #전처리2 [[]]
+    #
+    #
+    #     if "||||" in table_text:
+    #         (table2list2d(table_text))
+    #     elif "|| '" in table_text:
+    #         (table2list2d(table_text))
+    #     elif "|| " in table_text:
+    #         (table2list2d(table_text))
+    #     elif "||\n||" in table_text:
+    #         (table2list2d(table_text))
 
-    for k, table_text in enumerate(table_list):  #dictionary와 비슷, key값과 value값
-        table_text = table_text.replace('[[', '{x').replace(']]', 'x}')   #[[]] : 하이퍼링크 단어
-        table_text = re.sub(pattern=pattern1, repl='', string=table_text)  #특수문자 제거
-        table_text = preprocess2(table_text, p3) #전처리2 [[]]
-        #print(table_text)
 
-        #print(table_text) #전처리 된것
-        #print(scores[k])
-        #print(table_list[k]) #전처리 안된 것
-        # print("========\ntable_text")
-        # print(table_text)       #전처리 된 테이블 텍스트
-        # print("table_text_over\n========")
+    for tb in table:
+        result = table2list2d(tb[2:])
+        print("result\n", result)
+        table_result.append(result)
 
-        if "||||" in table_text:
-            (table2list2d(table_text))
-        elif "|| '" in table_text:
-            (table2list2d(table_text))
-        elif "|| " in table_text:
-            (table2list2d(table_text))
-        elif "||\n||" in table_text:
-            (table2list2d(table_text))
+    print("--------table_start--------\n")
+    print(table_result)
+    print("--------table_done--------\n")
+    print("================\n")
 
-        print("===" * 10)
-
-    savePreprocessedJson(document_title, document_str, table)
+    #save all in a json file
+    savePreprocessedJson(document_title, document_str, table_result)
     count += 1
-    if (count>5):
-        break
-    #input()
+    if (count>9):       #실험적으로 10개의 문서만 처리하도록 함
+       break
+
+    #input()            #문서 전처리 결과를 하나 씩 확인할 때 활성화
 

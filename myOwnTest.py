@@ -50,7 +50,7 @@ def procResultShow(filename):
 
 if __name__ == "__main__":
     #load_json('docData200302.json')
-    #load_json_title('*NSYNC')
+    #load_json_title('#FairyJoke')
     procResultShow('processedWiki.json')
 
 
