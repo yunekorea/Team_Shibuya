@@ -12,7 +12,7 @@ def load_json(filename):
                 print("\nCONTENT: %s" % value)
                 count += 1
             # debug
-            if count== 1 :
+            if count== 10 :
                 break
 
 def load_json_title(title):
@@ -49,8 +49,8 @@ def procResultShow(filename):
                 break
 
 if __name__ == "__main__":
-    #load_json('docData200302.json')
+    load_json('docData200302.json')
     #load_json_title('#FairyJoke')
-    procResultShow('processedWiki.json')
+    #procResultShow('processedWiki.json')
 
 

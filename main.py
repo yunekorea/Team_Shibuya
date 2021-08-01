@@ -10,7 +10,7 @@ capture_values = [
 
 wiki_group = dict()
 
-initialList = [{"title":"0", "text":"initial", "table":" "}]
+initialList = [{"title":"", "text":"", "table":""}]
 with open('processedWiki.json', 'w', encoding = 'utf-8') as initial:
     json.dump(initialList, initial)
 
@@ -42,7 +42,7 @@ def savePreprocessedJson(title, text, table):
         wikiData = json.load(wiki)
         wikiData.append(document)
         wiki.seek(0)
-        json.dump(wikiData, wiki)
+        json.dump(wikiData, wiki, ensure_ascii=False)
         #json.dump(document, wiki)
 
 
@@ -60,7 +60,7 @@ pattern3 = '{x[^x}]*x}'                 #'[['  -> '{x' / ']]'  -> 'x}'
 pattern_sim_00 = '\'\'\' \'\''                  #강조 기울임 시작
 pattern_sim_01 = '\'\' \'\'\''                  #강조 기울임 끝
 pattern_sim_02 = '\'\'\''                       #'''문장''' : 강조문. '''만 제거하면 될 것이다
-pattern_sim_03 = '\'\''                         #기울임. pattern4 이후에 처리
+pattern_sim_03 = '\'\''                         #기울임
 pattern_sim_04 = '\[목차\]'                       #[목차] : 목차 표시 지역
 pattern_sim_05 = '\[tableofcontent\]'
 pattern_sim_06 = '\[각주\]'                       #[각주] : 각주 표시 지역
@@ -87,7 +87,8 @@ pattern_del_08 = ',,[^,,]*,,'                   #아래첨자
 pattern_norm_00 = '__[^__]*__'                                  #밑줄
 pattern_norm_01 = '\{\{\{[#\+][^!\{\}][^\{\}]*\}\}\}'           #+ : 글의 크기 변경 / # : 글의 색 변경
 #pattern_norm_02 = '\{\{\{#[^\{\}]*\}\}\}'                      #글의 색 변경하는 패턴
-pattern_norm_03 = '\{\{\{#!folding \[[^\]*\][^\{\}]*\}\}\}'              #접기 문서
+pattern_norm_02 = '\{\{\{#!folding \[[^\]]*\][^\{\}]*\}\}\}'              #접기 문서
+pattern_norm_02_01 = '\[[^\]]*\]'
 
 #별도의 처리방법이 필요함
 pattern_ex_link = '\[\[[^\[\]]*\]\]'            #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
@@ -118,6 +119,7 @@ pattern_return_end = '\|\[\{end\}\]\|'
 #표 분리 후 남는 residue 처리하기 위한 패턴
 pattern_residue_00 = '\|\|'
 pattern_residue_01 = '\|\[\{end\}\]\|'
+pattern_residue_nl = '\n\n\n'                   #개행문자가 너무 많을 경우
 
 #정규 표현식 패턴 컴파일
 p1 = re.compile(pattern1)
@@ -153,7 +155,8 @@ pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06, pd07, pd08]
 pn00 = re.compile(pattern_norm_00)
 pn01 = re.compile(pattern_norm_01)
 #pn02 = re.compile(pattern_norm_02)
-pn03 = re.compile(pattern_norm_03)
+pn02 = re.compile(pattern_norm_02)
+pn02_01 = re.compile(pattern_norm_02_01)
 #pattern_norm_list = [pn00, pn01]       #각각 처리방법이 달라서 리스트로 묶지 않았음
 
 pex_link = re.compile(pattern_ex_link)
@@ -175,6 +178,7 @@ p_return_end = re.compile(pattern_return_end)
 p_re_00 = re.compile(pattern_residue_00)
 p_re_01 = re.compile(pattern_residue_01)
 pattern_residue_list = [p_re_00, p_re_01]
+p_re_nl = re.compile(pattern_residue_nl, re.DOTALL)
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
@@ -184,6 +188,34 @@ def redirect_check(sentence):               #리다이렉트 문서인지 확인
     result = eng|kor
 
     return result
+
+def translation_list_initialization():
+    initial = open('translationList.py', 'w')
+    initial.write("translationList = [")
+    initial.write("\n")
+    initial.close()
+
+def return_translation_result(sentence):
+    wholeSentence = sentence.split(' ')
+    newSentence = ''
+    for i in range(1, len(wholeSentence)):
+        newSentence += wholeSentence[i] + ' '
+    newSentence = newSentence[:-2]
+    return newSentence
+
+def translation_list_write(title, text):
+    file = open('translationList.py', 'a')
+    file.write('[')
+    file.write(title)
+    file.write(',')
+    file.write(text)
+    file.write('],\n')
+    file.close()
+
+def translation_list_finalization():
+    final = open('translationList.py', 'a')
+    final.write("[,]\n]")
+    initial.close()
 
 def preprocess0(sentence, p):
     tokens = p.findall(sentence)
@@ -285,13 +317,12 @@ def preprocess_norm_01(sentence):
 #     return sentence
 
 
-def preprocess_norm_03(sentence):       #접기기능 제거
-    tokens = pn03.findall(sentence)
+def preprocess_norm_02(sentence):       #접기기능 제거
+    tokens = pn02.findall(sentence)
 
     for token in tokens:
-        print("norm_03_token : \n", token)
-        print("token_done\n")
-        new_word = token.replace('{{{#!folding ', '').replace('}}}', '')
+        squareBracket = pn02_01.findall(token)
+        new_word = token.replace('{{{#!folding ', '').replace('}}}', '').replace(squareBracket[0], '')
         sentence = sentence.replace(token, new_word)
 
     return sentence
@@ -326,6 +357,13 @@ def preprocess_table(sentence):         #표와 일반 텍스트를 분리시킴
 
     return sentence, table
 
+def preprocess_initial_nl_delete(sentence):         #문서 시작부분의 개행문자를 없애줌
+    newSentence = sentence
+    while(newSentence.startswith('\n')):
+        newSentence = newSentence[1:]
+
+    return newSentence
+
 def preprocess_return_nl(sentence):
     tokens = p_return_nl.findall(sentence)
 
@@ -342,6 +380,16 @@ def preprocess_return_end(sentence):
         new_word = token.replace('|[{end}]|', '||\n\n')
         sentence = sentence.replace(token, new_word)
 
+    return sentence
+
+def preprocess_residue_nl(sentence):            #지나치게 많은 개행문자를 줄여줌
+    temp = sentence
+    tokens = p_re_nl.findall(temp)
+    while(tokens!=[]):
+        temp = temp.replace("\n\n\n", "\n\n")
+        tokens = p_re_nl.findall(temp)
+
+    sentence = temp
     return sentence
 
 def printlist(list_2):
@@ -571,6 +619,8 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
 
 
 count = 0
+
+translation_list_initialization()
 #main code
 for doc in parse_namuwiki_json(1000, debug=False):
     document_title = str(doc['title'])
@@ -578,6 +628,9 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     isRedirect = redirect_check(document_str)   #doc가 리다이렉트 문서인지 여부를 저장
     if(isRedirect == True):                     #doc가 리다이렉트 문서일 경우
+        before = document_title
+        after = return_translation_result(document_str)
+        translation_list_write(before,after)
         continue                                #이하의 처리 코드를 모두 건너뛰고 다음 doc으로 이동
 
     print('\n================')
@@ -596,7 +649,7 @@ for doc in parse_namuwiki_json(1000, debug=False):
     document_str = preprocess_norm_00(document_str)
     document_str = preprocess_norm_01(document_str)
     # document_str = preprocess_norm_02(document_str)
-    document_str = preprocess_norm_03(document_str)
+    document_str = preprocess_norm_02(document_str)
 
     document_str = preprocess_link(document_str, pex_link)
 
@@ -611,6 +664,9 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     document_str, table = preprocess_table(document_str)
 
+    document_str = preprocess_initial_nl_delete(document_str)
+
+
     for i in range(len(table)):
         table[i] = preprocess_return_nl(table[i])
         table[i] = preprocess_return_end(table[i])
@@ -618,6 +674,8 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     for pat in pattern_residue_list:
         document_str = preprocess_delete(document_str, pat)
+
+    document_str = preprocess_residue_nl(document_str)
 
     print("--------document_str_start--------\n")
     print(document_str)
@@ -654,7 +712,6 @@ for doc in parse_namuwiki_json(1000, debug=False):
             table_list.append(new_table_text)
             scores.append(check1 / check2)                                  #???
 
-    table_result = []
     # for k, table_text in enumerate(table_list):  #dictionary와 비슷, key값과 value값
     #     table_text = table_text.replace('[[', '{x').replace(']]', 'x}')   #[[]] : 하이퍼링크 단어
     #     table_text = re.sub(pattern=pattern1, repl='', string=table_text)  #특수문자 제거
@@ -670,7 +727,7 @@ for doc in parse_namuwiki_json(1000, debug=False):
     #     elif "||\n||" in table_text:
     #         (table2list2d(table_text))
 
-
+    table_result = []
     for tb in table:
         result = table2list2d(tb[2:])
         print("result\n", result)
@@ -683,9 +740,10 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     #save all in a json file
     savePreprocessedJson(document_title, document_str, table_result)
-    count += 1
-    if (count>9):       #실험적으로 10개의 문서만 처리하도록 함
-       break
+    # count += 1
+    # if (count>9):       #실험적으로 10개의 문서만 처리하도록 함
+    #    break
 
-    #input()            #문서 전처리 결과를 하나 씩 확인할 때 활성화
+    input()            #문서 전처리 결과를 하나 씩 확인할 때 활성화
 
+translation_list_finalization()
