@@ -45,12 +45,13 @@ def procResultShow(filename):
                 print("\nTABLE: %s" % value)
                 count += 1
             # debug
-            if count== 100 :
+            input()
+            if count== 10 :
                 break
 
 if __name__ == "__main__":
-    load_json('docData200302.json')
+    #load_json('docData200302.json')
     #load_json_title('#FairyJoke')
-    #procResultShow('processedWiki.json')
+    procResultShow('processedWiki.json')
 
 

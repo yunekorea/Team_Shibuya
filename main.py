@@ -399,7 +399,8 @@ def printlist(list_2):
 
 def makelist(m,list_t1,list_2d):                #표 텍스트를 이용해서 리스트 생성
     # print('--------\nmakelist function')
-    # print("before\n", list_t1)
+    # print("1\n", list_t1)
+    # print("m\n", list_t1[m])
 
     if (m == 0) & (list_t1[m][0:4] == '||||'):  #row span인지 아닌지
         pass
@@ -425,95 +426,47 @@ def makelist(m,list_t1,list_2d):                #표 텍스트를 이용해서 �
         a = 0
         # elif '||||' in list_t1[m]:
         #    a=True
-
+    # print("2\n", list_t1)
     list_t2 = list_t1[m].split('||')  # 첫번째 나누기 : column에 따라 나누는 것, str -> list, rowspan 처리
-
+    # print("3\n",list_t2)
     # for l, k in enumerate(list_t2):
     #    if "||||" in k:
     #        list_t2[l] = k.split('|||') #두번째 나누기 : ||||에 따라 나누기, 리스
     # print(list_t2)
-    if a != 0:      #a가 0이 아닌 경우가 무엇인가???
-        # print(a)
+    if a != 0:                                              #a가 0이 아닌 경우 : 빈 칸('||||')이 하나 이상 있는 경우
         for o, word in enumerate(list_t2):
-            if word == '':
-                if list_t2[o + 1] != '':
-                    list_t2[o] = list_t2[o + 1]
-                    # print(list_t2[o])
-                elif list_t2[o + 2] != '':
-                    list_t2[o] = list_t2[o + 2]
-                elif list_t2[o + 3] != '':
-                    list_t2[o] = list_t2[o + 3]
-                elif list_t2[o + 4] != '':
-                    list_t2[o] = list_t2[o + 4]
-                elif list_t2[o + 5] != '':
-                    list_t2[o] = list_t2[o + 5]
-                elif list_t2[o + 6] != '':
-                    list_t2[o] = list_t2[o + 6]
+            if word == '':                                  #빈 칸일 경우
+                place = 1
+                while(place + o < len(list_t2)):            #현재 칸에서 한 칸씩 뒤로가면서
+                    if list_t2[o + place] != '':            #내용이 있을 경우
+                        list_t2[o] = list_t2[o + place]     #현재 칸에 같은 내용 복사
+                        break
+                    place += 1
+            if list_t2[o] == '':                            #위의 코드 실행 후에도 빈 칸일경우
+                place = 1
+                while(place <= o):                          #현재 칸에서 한 칸씩 앞으로 가면서
+                    if list_t2[o - place] != '':            #내용이 있을경우
+                        list_t2[o] = list_t2[o - place]     #현재 칸에 같은 내용 복사
+                        break
+                    place += 1
 
-    #print("list_t2\n", list_t2)
+                # if list_t2[o + 1] != '':
+                #     list_t2[o] = list_t2[o + 1]
+                #     # print(list_t2[o])
+                # elif list_t2[o + 2] != '':
+                #     list_t2[o] = list_t2[o + 2]
+                # elif list_t2[o + 3] != '':
+                #     list_t2[o] = list_t2[o + 3]
+                # elif list_t2[o + 4] != '':
+                #     list_t2[o] = list_t2[o + 4]
+                # elif list_t2[o + 5] != '':
+                #     list_t2[o] = list_t2[o + 5]
+                # elif list_t2[o + 6] != '':
+                #     list_t2[o] = list_t2[o + 6]
+
+    # print("list_t2\n", list_t2)
     # print("-------\n")
     list_2d.append(list_t2)
-
-def makelist_new(list_t1,list_2d):                #표 텍스트를 이용해서 리스트 생성
-    # print('--------\nmakelist function')
-    # print("before\n", list_t1)
-
-    print("list_t1\n", list_t1)
-
-
-    if (list_t1[0:4] == '||||'):  #row span인지 아닌지
-        pass
-    elif list_t1[0:6] == '||||||':           #|||||| -> ||||
-        list_t1 = list_t1[4:]
-    elif list_t1[0:2] == '||':               #row span이 아니며 ||로 시작하는 경우 -> ||삭제
-        list_t1 = list_t1[2:]
-
-    if list_t1[-2:] == '||':                 #끝부분의 || 삭제
-        list_t1 = list_t1[:-2]
-
-    if '||||||||||||||||' in list_t1:        #|*16
-        a = 1
-    elif '||||||||||||||' in list_t1:        #|*14
-        a = 2
-    elif '||||||||||' in list_t1:            #|*10
-        a = 3
-    elif '||||||' in list_t1:                #|*6
-        a = 4
-    elif '||||' in list_t1:                  #|*4
-        a = 5
-    else:
-        a = 0
-        # elif '||||' in list_t1[m]:
-        #    a=True
-
-    list_t2 = list_t1.split('||')  # 첫번째 나누기 : column에 따라 나누는 것, str -> list, rowspan 처리
-
-    # for l, k in enumerate(list_t2):
-    #    if "||||" in k:
-    #        list_t2[l] = k.split('|||') #두번째 나누기 : ||||에 따라 나누기, 리스
-    # print(list_t2)
-    if a != 0:      #a가 0이 아닌 경우가 무엇인가???
-        # print(a)
-        for o, word in enumerate(list_t2):
-            if word == '':
-                if list_t2[o + 1] != '':
-                    list_t2[o] = list_t2[o + 1]
-                    # print(list_t2[o])
-                elif list_t2[o + 2] != '':
-                    list_t2[o] = list_t2[o + 2]
-                elif list_t2[o + 3] != '':
-                    list_t2[o] = list_t2[o + 3]
-                elif list_t2[o + 4] != '':
-                    list_t2[o] = list_t2[o + 4]
-                elif list_t2[o + 5] != '':
-                    list_t2[o] = list_t2[o + 5]
-                elif list_t2[o + 6] != '':
-                    list_t2[o] = list_t2[o + 6]
-
-    # print("after\n", list_t1)
-    # print("-------\n")
-    list_2d.append(list_t2)
-
 
 def colspan(list_2d):
     # print('========\ncolspan function')
@@ -545,8 +498,6 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
     list_2d3 = []
     list_2d4 = []
     list_2d5 = []
-    list_2d_temp = []
-    list_2d = []
 
     nextlistswitch = 0              #한 문서 내에 여러 리스트가 있는 경우 다음
     listIndex = 0
@@ -622,7 +573,7 @@ count = 0
 
 translation_list_initialization()
 #main code
-for doc in parse_namuwiki_json(1000, debug=False):
+for doc in parse_namuwiki_json(debug=False):
     document_title = str(doc['title'])
     document_str = str(doc['text'])
 
@@ -633,10 +584,10 @@ for doc in parse_namuwiki_json(1000, debug=False):
         translation_list_write(before,after)
         continue                                #이하의 처리 코드를 모두 건너뛰고 다음 doc으로 이동
 
-    print('\n================')
-    print('--------title--------')
+    # print('\n================')
+    # print('--------title--------')
     print(document_title)  # title 출력
-    print('----------------\n')
+    # print('----------------\n')
 
     document_str = preprocess0(document_str, p1)
 
@@ -648,7 +599,6 @@ for doc in parse_namuwiki_json(1000, debug=False):
 
     document_str = preprocess_norm_00(document_str)
     document_str = preprocess_norm_01(document_str)
-    # document_str = preprocess_norm_02(document_str)
     document_str = preprocess_norm_02(document_str)
 
     document_str = preprocess_link(document_str, pex_link)
@@ -676,12 +626,6 @@ for doc in parse_namuwiki_json(1000, debug=False):
         document_str = preprocess_delete(document_str, pat)
 
     document_str = preprocess_residue_nl(document_str)
-
-    print("--------document_str_start--------\n")
-    print(document_str)
-    print("--------document_str_done--------\n")
-
-
 
     document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환        ???
     table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
@@ -730,20 +674,23 @@ for doc in parse_namuwiki_json(1000, debug=False):
     table_result = []
     for tb in table:
         result = table2list2d(tb[2:])
-        print("result\n", result)
+        #print("result\n", result)
         table_result.append(result)
 
-    print("--------table_start--------\n")
-    print(table_result)
-    print("--------table_done--------\n")
-    print("================\n")
+    # print("--------document_str_start--------\n")
+    # print(document_str)                                 #문서 text 출력
+    # print("--------document_str_done--------\n")
+    # print("--------table_start--------\n")
+    # print(table_result)                         #문서 table 출력
+    # print("--------table_done--------\n")
+    # print("================\n")
 
     #save all in a json file
     savePreprocessedJson(document_title, document_str, table_result)
     # count += 1
-    # if (count>9):       #실험적으로 10개의 문서만 처리하도록 함
+    # if (count>500):       #실험적으로 10개의 문서만 처리하도록 함
     #    break
 
-    input()            #문서 전처리 결과를 하나 씩 확인할 때 활성화
+    #input()            #문서 전처리 결과를 하나 씩 확인할 때 활성화
 
 translation_list_finalization()
