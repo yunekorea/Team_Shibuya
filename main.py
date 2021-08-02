@@ -16,7 +16,7 @@ initialList = [{"title":"", "text":"", "table":""}]
 with open('processedWiki.json', 'w', encoding = 'utf-8') as initial:
     json.dump(initialList, initial)
 
-def parse_namuwiki_json(limit=-1, debug=False):
+def parse_namuwiki_json(limit=-1, debug=False):             #나무위키 json dump file parsing
     i = 0
     doc = {}
     with open('docData200302.json') as f:
@@ -34,21 +34,47 @@ def parse_namuwiki_json(limit=-1, debug=False):
                 if limit > 0 and i >= limit:
                     break
 
-wiki = open('processedWiki.json', 'r+', encoding = 'utf-8')
-def savePreprocessedJson(title, text, table):
+# wiki = open('processedWiki.json', 'r+', encoding = 'utf-8')
+docNum = 0                                          #docSet에 저장된 문서의 양을 저장하는 변수
+docSet = []                                         #전처리 된 문서를 임시로 저장하는 리스트
+def savePreprocessedJson(title, text, table):       #전처리 된 문서를 json에 붙여넣는 함수
     document = dict()
     document["title"] = title
     document["text"] = text
     table_json = json.dumps(table, ensure_ascii=False)
     document["table"] = table_json
-    # with open('processedWiki.json', 'r+', encoding = 'utf-8') as wiki:
-    #     wikiData = json.load(wiki)
-    #     wikiData.append(document)
-    #     wiki.seek(0)
-    #     json.dump(wikiData, wiki, ensure_ascii=False)
-    wiki.append(document)
-        #json.dump(document, wiki)
+    global docNum
+    global docSet
+    docNum = docNum + 1
+    docSet.append(document)
+    if docNum > 1000:                               #docSet내의 문서 수가 일정량 이상 넘으면 json에 붙여넣는다.
+        with open('processedWiki.json', 'r+', encoding = 'utf-8') as wiki:
+            print("\n\n========\n")
+            print("saving wiki data")
+            print("\n========\n\n")
+            wikiData = json.load(wiki)
+            for i in range(len(docSet)):
+                wikiData.append(docSet[i])
+            #wikiData.append(document)
+            wiki.seek(0)
+            json.dump(wikiData, wiki, ensure_ascii=False)
+        docNum = 0
+        docSet = []
 
+def saveLeftoverPreprocessedJson():     #docNum이 상한선을 달성하지 못하고 문서처리가 끝날 경우
+    global docNum                       #docSet에 남은 처리완료문서를 json에 넣는 함수
+    global docSet
+    with open('processedWiki.json', 'r+', encoding='utf-8') as wiki:
+        print("\n\n========\n")
+        print("saving wiki data")
+        print("\n========\n\n")
+        wikiData = json.load(wiki)
+        for i in range(len(docSet)):
+            wikiData.append(docSet[i])
+        wiki.seek(0)
+        json.dump(wikiData, wiki, ensure_ascii=False)
+    docNum = 0
+    docSet = []
 
 #정규 표현식
 
@@ -631,34 +657,34 @@ for doc in parse_namuwiki_json(debug=False):
 
     document_str = preprocess_residue_nl(document_str)
 
-    document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환        ???
-    table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
-    table_list = []
-    scores = []
-
-    #table
-    for i, table_text in enumerate(table_list_):    #||\n\n으로 분리된 문자열(document_str)을 하나씩 가져옴
-        new_table_text = ''
-        opened = False
-        check1 = 1                                  #???
-        check2 = 1                                  #???
-
-        for j in range(len(table_text)):
-            if j > 1:
-                if table_text[j - 1] == '|' and table_text[j - 2] == '|':   #표의 행 시작
-                    opened = True
-                if table_text[j - 1] == '\n' and table_text[j] == '|':      #표 개행
-                    check1 += 1
-                if table_text[j] == '\n':
-                    check2 += 1
-
-            if opened is True:                                              #표의 행이 시작됐을 때
-                new_table_text += table_text[j]                             #테이블 텍스트에 삽입하기 시작함
-
-
-        if opened is True:
-            table_list.append(new_table_text)
-            scores.append(check1 / check2)                                  #???
+    # document_str.replace('||\n=', '||\n\n=').replace('||\n *', '||\n\n *') #왼쪽 문자열을 오른쪽으로 변환        ???
+    # table_list_ = document_str.split('||\n\n') #||\n\n기준으로 문자열 분리 -> 리스트로 반환
+    # table_list = []
+    # scores = []
+    #
+    # #table
+    # for i, table_text in enumerate(table_list_):    #||\n\n으로 분리된 문자열(document_str)을 하나씩 가져옴
+    #     new_table_text = ''
+    #     opened = False
+    #     check1 = 1                                  #???
+    #     check2 = 1                                  #???
+    #
+    #     for j in range(len(table_text)):
+    #         if j > 1:
+    #             if table_text[j - 1] == '|' and table_text[j - 2] == '|':   #표의 행 시작
+    #                 opened = True
+    #             if table_text[j - 1] == '\n' and table_text[j] == '|':      #표 개행
+    #                 check1 += 1
+    #             if table_text[j] == '\n':
+    #                 check2 += 1
+    #
+    #         if opened is True:                                              #표의 행이 시작됐을 때
+    #             new_table_text += table_text[j]                             #테이블 텍스트에 삽입하기 시작함
+    #
+    #
+    #     if opened is True:
+    #         table_list.append(new_table_text)
+    #         scores.append(check1 / check2)                                  #???
 
     # for k, table_text in enumerate(table_list):  #dictionary와 비슷, key값과 value값
     #     table_text = table_text.replace('[[', '{x').replace(']]', 'x}')   #[[]] : 하이퍼링크 단어
@@ -691,10 +717,11 @@ for doc in parse_namuwiki_json(debug=False):
 
     #save all in a json file
     savePreprocessedJson(document_title, document_str, table_result)
-    # count += 1
-    # if (count>500):       #실험적으로 10개의 문서만 처리하도록 함
-    #    break
+    count += 1
+    if (count>5000):       #실험적으로 일부의 문서만 처리하도록 함
+       break
 
     #input()            #문서 전처리 결과를 하나 씩 확인할 때 활성화
 
+saveLeftoverPreprocessedJson()
 translation_list_finalization()
