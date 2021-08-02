@@ -2,6 +2,8 @@ import ijson
 import json
 import re
 
+
+
 capture_values = [
     ("item.namespace", "string"),
     ("item.title", "string"),
@@ -32,17 +34,19 @@ def parse_namuwiki_json(limit=-1, debug=False):
                 if limit > 0 and i >= limit:
                     break
 
+wiki = open('processedWiki.json', 'r+', encoding = 'utf-8')
 def savePreprocessedJson(title, text, table):
     document = dict()
     document["title"] = title
     document["text"] = text
     table_json = json.dumps(table, ensure_ascii=False)
     document["table"] = table_json
-    with open('processedWiki.json', 'r+', encoding = 'utf-8') as wiki:
-        wikiData = json.load(wiki)
-        wikiData.append(document)
-        wiki.seek(0)
-        json.dump(wikiData, wiki, ensure_ascii=False)
+    # with open('processedWiki.json', 'r+', encoding = 'utf-8') as wiki:
+    #     wikiData = json.load(wiki)
+    #     wikiData.append(document)
+    #     wiki.seek(0)
+    #     json.dump(wikiData, wiki, ensure_ascii=False)
+    wiki.append(document)
         #json.dump(document, wiki)
 
 
@@ -190,7 +194,7 @@ def redirect_check(sentence):               #리다이렉트 문서인지 확인
     return result
 
 def translation_list_initialization():
-    initial = open('translationList.py', 'w')
+    initial = open('translationList.py', 'w', encoding='utf-8')
     initial.write("translationList = [")
     initial.write("\n")
     initial.close()
@@ -204,7 +208,7 @@ def return_translation_result(sentence):
     return newSentence
 
 def translation_list_write(title, text):
-    file = open('translationList.py', 'a')
+    file = open('translationList.py', 'a', encoding='utf-8')
     file.write('[')
     file.write(title)
     file.write(',')
@@ -213,7 +217,7 @@ def translation_list_write(title, text):
     file.close()
 
 def translation_list_finalization():
-    final = open('translationList.py', 'a')
+    final = open('translationList.py', 'a', encoding='utf-8')
     final.write("[,]\n]")
     initial.close()
 
