@@ -1,8 +1,7 @@
 import ijson
 import json
 import re
-
-
+import os
 
 capture_values = [
     ("item.namespace", "string"),
@@ -10,11 +9,9 @@ capture_values = [
     ("item.text", "string")
 ]
 
-wiki_group = dict()
+#wiki_group = dict()
 
-initialList = [{"title":"", "text":"", "table":""}]
-with open('processedWiki.json', 'w', encoding = 'utf-8') as initial:
-    json.dump(initialList, initial)
+
 
 def parse_namuwiki_json(limit=-1, debug=False):             #나무위키 json dump file parsing
     i = 0
@@ -34,9 +31,12 @@ def parse_namuwiki_json(limit=-1, debug=False):             #나무위키 json d
                 if limit > 0 and i >= limit:
                     break
 
-# wiki = open('processedWiki.json', 'r+', encoding = 'utf-8')
+expFileName = 'processedWiki'
+expFileExt = '.json'
 docNum = 0                                          #docSet에 저장된 문서의 양을 저장하는 변수
+jsonNum = 0                                         #분할된 processedWiki.json의 개수
 docSet = []                                         #전처리 된 문서를 임시로 저장하는 리스트
+#jsonFileName = 'processedWiki.json'
 def savePreprocessedJson(title, text, table):       #전처리 된 문서를 json에 붙여넣는 함수
     document = dict()
     document["title"] = title
@@ -45,29 +45,52 @@ def savePreprocessedJson(title, text, table):       #전처리 된 문서를 jso
     document["table"] = table_json
     global docNum
     global docSet
+    global jsonNum
     docNum = docNum + 1
     docSet.append(document)
-    if docNum > 1000:                               #docSet내의 문서 수가 일정량 이상 넘으면 json에 붙여넣는다.
-        with open('processedWiki.json', 'r+', encoding = 'utf-8') as wiki:
-            print("\n\n========\n")
-            print("saving wiki data")
-            print("\n========\n\n")
-            wikiData = json.load(wiki)
-            for i in range(len(docSet)):
-                wikiData.append(docSet[i])
-            #wikiData.append(document)
-            wiki.seek(0)
-            json.dump(wikiData, wiki, ensure_ascii=False)
-        docNum = 0
-        docSet = []
+    if docNum > 10000:                                      #docSet내의 문서 수가 일정량 이상 넘으면 다음의 처리를 한다.
+        expFileNum = format(jsonNum, '03')
+        jsonFileName = expFileName + expFileNum + expFileExt    #처리 후 문서를 저장하는 json의 파일 이름 만들기
+        if os.path.isfile(jsonFileName)==False :                #저장할 json이 존재하지 않는 경우 :
+            initializeJson(jsonFileName)                            #json파일 생성 및 초기화 후
+            saveJson(jsonFileName, docSet)                          #docSet 저장
+        elif os.path.getsize(jsonFileName) >= 524288000 :       #처리 후 문서의 크기가 500MB이상일 경우 :
+            saveJson(jsonFileName, docSet)                          #docSet 저장
+            jsonNum += 1                                            #jsonNum 1 증가, 다음 문서 저장부터는 새 문서 생성
+        else :                                                  #문서가 존재하며 문서의 크기가 500MB 미만일 경우:
+            saveJson(jsonFileName, docSet)                          #docSet 저장
+        docNum = 0                                              #docNum 초기화
+        docSet = []                                             #docSet 초기화
 
-def saveLeftoverPreprocessedJson():     #docNum이 상한선을 달성하지 못하고 문서처리가 끝날 경우
+def initializeJson(jsonFileName):
+    print("\n\n========\n")
+    print("initialized \n", jsonFileName)
+    print("\n========\n\n")
+    initialList = [{"title":"", "text":"", "table":""}]
+    with open(jsonFileName, 'w', encoding = 'utf-8') as initial:
+        json.dump(initialList, initial)
+
+def saveJson(jsonFileName, docSet):
+    with open(jsonFileName, 'r+', encoding='utf-8') as wiki:
+        print("\n--------")
+        print("saving wiki data on\n", jsonFileName)
+        print("--------\n")
+        wikiData = json.load(wiki)
+        for i in range(len(docSet)):
+            wikiData.append(docSet[i])
+        wiki.seek(0)
+        json.dump(wikiData, wiki, ensure_ascii=False)
+
+
+def saveLeftoverPreprocessedJson():     #docNum이 상한선을 달성하지 못하고 문서처리가 완전히 끝날 경우
     global docNum                       #docSet에 남은 처리완료문서를 json에 넣는 함수
     global docSet
-    with open('processedWiki.json', 'r+', encoding='utf-8') as wiki:
-        print("\n\n========\n")
-        print("saving wiki data")
-        print("\n========\n\n")
+    expFileNum = format(jsonNum, '03')
+    jsonFileName = expFileName + expFileNum + expFileExt
+    with open(jsonFileName, 'r+', encoding='utf-8') as wiki:
+        print("\n--------")
+        print("saving wiki data on\n", jsonFileName)
+        print("--------\n")
         wikiData = json.load(wiki)
         for i in range(len(docSet)):
             wikiData.append(docSet[i])
@@ -99,7 +122,6 @@ pattern_sim_08 = '\[br\]'                       #[br] : 줄바꿈
 pattern_sim_09 = '\[\[\.\./\]\]'                #[..\] : 현재 문서의 상위 문서 링크
 pattern_sim_10 = '-{4,9}'                       #---- : 4개에서 9개의 하이픈 -> 수평줄
 pattern_sim_11 = '\[clearfix\]'                 #[clearfix] : CSS float 속성 초기화
-#pattern_sim_12 = '\[ 펼치기 · 접기 \]'             # '#!folding'에 추가로 들어가는 글
 
 
 #중간에 추가 글이 들어가는 패턴. 단순 삭제하기
@@ -601,7 +623,7 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
 
 count = 0
 
-translation_list_initialization()
+# translation_list_initialization()
 #main code
 for doc in parse_namuwiki_json(debug=False):
     document_title = str(doc['title'])
@@ -609,14 +631,18 @@ for doc in parse_namuwiki_json(debug=False):
 
     isRedirect = redirect_check(document_str)   #doc가 리다이렉트 문서인지 여부를 저장
     if(isRedirect == True):                     #doc가 리다이렉트 문서일 경우
-        before = document_title
-        after = return_translation_result(document_str)
-        translation_list_write(before,after)
+        # before = document_title
+        # after = return_translation_result(document_str)
+        # print("### redirect document ###")
+        # print("before : ", before)
+        # print("after : ", after)
+        # print("#########################")
+        # translation_list_write(before, after)
         continue                                #이하의 처리 코드를 모두 건너뛰고 다음 doc으로 이동
 
     # print('\n================')
     # print('--------title--------')
-    print(document_title)  # title 출력
+    #print(document_title)  # title 출력
     # print('----------------\n')
 
     document_str = preprocess0(document_str, p1)
@@ -717,11 +743,11 @@ for doc in parse_namuwiki_json(debug=False):
 
     #save all in a json file
     savePreprocessedJson(document_title, document_str, table_result)
-    count += 1
-    if (count>5000):       #실험적으로 일부의 문서만 처리하도록 함
-       break
+    # count += 1            #실험적으로
+    # if (count>5000):      #일부 문서만 처리할 경우
+    #    break              #주석 해제
 
-    #input()            #문서 전처리 결과를 하나 씩 확인할 때 활성화
+    #input()            #문서 전처리 결과를 하나씩 확인할 때 활성화
 
 saveLeftoverPreprocessedJson()
 translation_list_finalization()

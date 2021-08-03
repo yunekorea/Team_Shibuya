@@ -1,4 +1,5 @@
 import ijson
+import os
 
 def load_json(filename):
     count=0
@@ -52,6 +53,8 @@ def procResultShow(filename):
 if __name__ == "__main__":
     #load_json('docData200302.json')
     #load_json_title('#FairyJoke')
-    procResultShow('processedWiki.json')
+    #procResultShow('processedWiki.json')
+    asdf = os.path.isfile("./test3.py")
+    print(asdf)
 
 
