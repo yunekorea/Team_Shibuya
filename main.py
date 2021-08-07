@@ -63,18 +63,18 @@ def savePreprocessedJson(title, text, table):       #전처리 된 문서를 jso
         docSet = []                                             #docSet 초기화
 
 def initializeJson(jsonFileName):
-    print("\n\n========\n")
+    print("\n\n================")
     print("initialized \n", jsonFileName)
-    print("\n========\n\n")
+    print("================\n\n")
     initialList = [{"title":"", "text":"", "table":""}]
     with open(jsonFileName, 'w', encoding = 'utf-8') as initial:
         json.dump(initialList, initial)
 
 def saveJson(jsonFileName, docSet):
     with open(jsonFileName, 'r+', encoding='utf-8') as wiki:
-        print("\n--------")
+        print("\n----------------")
         print("saving wiki data on\n", jsonFileName)
-        print("--------\n")
+        print("----------------\n")
         wikiData = json.load(wiki)
         for i in range(len(docSet)):
             wikiData.append(docSet[i])
@@ -88,9 +88,9 @@ def saveLeftoverPreprocessedJson():     #docNum이 상한선을 달성하지 못
     expFileNum = format(jsonNum, '03')
     jsonFileName = expFileName + expFileNum + expFileExt
     with open(jsonFileName, 'r+', encoding='utf-8') as wiki:
-        print("\n--------")
+        print("\n----------------")
         print("saving wiki data on\n", jsonFileName)
-        print("--------\n")
+        print("----------------\n")
         wikiData = json.load(wiki)
         for i in range(len(docSet)):
             wikiData.append(docSet[i])
@@ -114,9 +114,9 @@ pattern_sim_00 = '\'\'\' \'\''                  #강조 기울임 시작
 pattern_sim_01 = '\'\' \'\'\''                  #강조 기울임 끝
 pattern_sim_02 = '\'\'\''                       #'''문장''' : 강조문. '''만 제거하면 될 것이다
 pattern_sim_03 = '\'\''                         #기울임
-pattern_sim_04 = '\[목차\]'                       #[목차] : 목차 표시 지역
+pattern_sim_04 = '\[목차\]'                      #[목차] : 목차 표시 지역
 pattern_sim_05 = '\[tableofcontent\]'
-pattern_sim_06 = '\[각주\]'                       #[각주] : 각주 표시 지역
+pattern_sim_06 = '\[각주\]'                      #[각주] : 각주 표시 지역
 pattern_sim_07 = '\[footnote\]'
 pattern_sim_08 = '\[br\]'                       #[br] : 줄바꿈
 pattern_sim_09 = '\[\[\.\./\]\]'                #[..\] : 현재 문서의 상위 문서 링크
@@ -125,22 +125,22 @@ pattern_sim_11 = '\[clearfix\]'                 #[clearfix] : CSS float 속성 �
 
 
 #중간에 추가 글이 들어가는 패턴. 단순 삭제하기
-pattern_del_00 = '\{\{\{#!html[^\{\}]*\}\}\}' #{{{#!html link }}} :  링크
-pattern_del_01 = '~~[^~~]*~~'                   #~~sentence~~ : 취소선 문장
-pattern_del_02 = '--[^--]*--'                   #--sentence-- : 취소선 문장
-pattern_del_03 = '=[=]+[^=]*=[=]+'              #== title == : 문단 제목
-pattern_del_04 = '\[\[파일\:[^\[\]]*\]\]'        #[[파일:link]] : 파일 링크
-pattern_del_05 = '\[\[분류\:[^\[\]]*\]\]'        #[[분류:link]] : 분류
-pattern_del_06 = '\[\[https?://[^\|\[\]]*\]\]'  #[[https?://link]] : 외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
-pattern_del_07 = '\^\^[^\^\^]*\^\^'             #위첨자
-pattern_del_08 = ',,[^,,]*,,'                   #아래첨자
+pattern_del_00 = '~~[^~~]*~~'                   #~~sentence~~ : 취소선 문장
+pattern_del_01 = '--[^--]*--'                   #--sentence-- : 취소선 문장
+pattern_del_02 = '=[=]+[^=]*=[=]+'              #== title == : 문단 제목
+pattern_del_03 = '\[\[파일\:[^\[\]]*\]\]'        #[[파일:link]] : 파일 링크
+pattern_del_04 = '\[\[분류\:[^\[\]]*\]\]'        #[[분류:link]] : 분류
+pattern_del_05 = '\[\[https?://[^\|\[\]]*\]\]'  #[[https?://link]] : 외부링크로 연결되어 있으며 실제 출력 텍스트가 구별되어있지 않은 링크.
+pattern_del_06 = '\^\^[^\^\^]*\^\^'             #위첨자
+pattern_del_07 = ',,[^,,]*,,'                   #아래첨자
+#pattern_del_08 = '\{\{\{#!html [^\{\}]*\}\}\}' #{{{#!html link }}} :  링크
 
 #중간에 추가 글이 들어가는 패턴. 표시된 부분만 삭제
-pattern_norm_00 = '__[^__]*__'                                  #밑줄
-pattern_norm_01 = '\{\{\{[#\+][^!\{\}][^\{\}]*\}\}\}'           #+ : 글의 크기 변경 / # : 글의 색 변경
-#pattern_norm_02 = '\{\{\{#[^\{\}]*\}\}\}'                      #글의 색 변경하는 패턴
-pattern_norm_02 = '\{\{\{#!folding \[[^\]]*\][^\{\}]*\}\}\}'              #접기 문서
-pattern_norm_02_01 = '\[[^\]]*\]'
+pattern_norm_00 = '__[^__]*__'                                      #밑줄
+pattern_norm_01 = '\{\{\{[#\+\-][^!\{\}][^\{\}]*\}\}\}'             #+,- : 글의 크기 변경 / # : 글의 색 변경
+pattern_norm_02 = '\{\{\{#!folding [\[【][^\]】]*[\]】][^\{\}]*\}\}\}'        #접기 문서
+pattern_norm_02_01 = '[\[【][^\]】]*[\]】]'                                   #접기 상태에서 펼치는 버튼 역할을 하는 텍스트
+pattern_norm_03 = '\{\{\{#!html [^\{\}]*\}\}\}'                     #html문법을 따르는 텍스트. 앞 뒤로 삭제 필요
 
 #별도의 처리방법이 필요함
 pattern_ex_link = '\[\[[^\[\]]*\]\]'            #하이퍼링크 [[문장]]과 같은 방식으로 구성되어 있으며, 실제 텍스트와 링크된 문서의 제목이 다른 경우 좌측이 링크된 문서 제목, 우측이 실제 텍스트
@@ -193,7 +193,7 @@ ps11 = re.compile(pattern_sim_11)
 #ps12 = re.compile(pattern_sim_12)
 pattern_sim_list = [ps00, ps01, ps02, ps03, ps04, ps05, ps06, ps07, ps08, ps09, ps10, ps11]
 
-pd00 = re.compile(pattern_del_00, re.DOTALL.I)
+pd00 = re.compile(pattern_del_00)
 pd01 = re.compile(pattern_del_01)
 pd02 = re.compile(pattern_del_02)
 pd03 = re.compile(pattern_del_03)
@@ -201,14 +201,15 @@ pd04 = re.compile(pattern_del_04)
 pd05 = re.compile(pattern_del_05)
 pd06 = re.compile(pattern_del_06)
 pd07 = re.compile(pattern_del_07)
-pd08 = re.compile(pattern_del_08)
-pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06, pd07, pd08]
+#pd08 = re.compile(pattern_del_08, re.DOTALL.I)
+pattern_del_list = [pd00, pd01, pd02, pd03, pd04, pd05, pd06, pd07] #08은 임시로 지운 상태
 
 pn00 = re.compile(pattern_norm_00)
 pn01 = re.compile(pattern_norm_01)
 #pn02 = re.compile(pattern_norm_02)
-pn02 = re.compile(pattern_norm_02)
+pn02 = re.compile(pattern_norm_02, re.DOTALL)
 pn02_01 = re.compile(pattern_norm_02_01)
+pn03 = re.compile(pattern_norm_03, re.DOTALL.I)
 #pattern_norm_list = [pn00, pn01]       #각각 처리방법이 달라서 리스트로 묶지 않았음
 
 pex_link = re.compile(pattern_ex_link)
@@ -257,17 +258,17 @@ def return_translation_result(sentence):
 
 def translation_list_write(title, text):
     file = open('translationList.py', 'a', encoding='utf-8')
-    file.write('[')
+    file.write('["')
     file.write(title)
-    file.write(',')
+    file.write('" , "')
     file.write(text)
-    file.write('],\n')
+    file.write('"],\n')
     file.close()
 
 def translation_list_finalization():
     final = open('translationList.py', 'a', encoding='utf-8')
     final.write("[,]\n]")
-    initial.close()
+    final.close()
 
 def preprocess0(sentence, p):
     tokens = p.findall(sentence)
@@ -331,14 +332,12 @@ def preprocess_norm_00(sentence):       #밑줄 제거
 
     return sentence
 
-def preprocess_norm_01(sentence):
+def preprocess_norm_01(sentence):       #글 크기 및 색 변경 패턴 제거
     temp = sentence
     tokens = pn01.findall(temp)
 
     while(tokens!=[]):
         for token in tokens:
-            # print("norm_01_token : \n", token)
-            # print("token_done\n")
             tk = token.split(' ')
             new_word = ''
 
@@ -352,29 +351,21 @@ def preprocess_norm_01(sentence):
     sentence = temp
     return sentence
 
-# def preprocess_norm_02(sentence):       #글 색 변경 패턴 제거
-#     tokens = pn02.findall(sentence)
-#
-#     for token in tokens:
-#         #print("norm01_tokens\n", token)
-#         tk = token.split(' ')
-#         new_word = ''
-#
-#         for j in range(1, len(tk)):
-#             new_word += tk[j] + ' '
-#         new_word = new_word.replace('}}}', '')
-#
-#         sentence = sentence.replace(token, new_word)
-#
-#     return sentence
-
-
 def preprocess_norm_02(sentence):       #접기기능 제거
     tokens = pn02.findall(sentence)
 
     for token in tokens:
         squareBracket = pn02_01.findall(token)
         new_word = token.replace('{{{#!folding ', '').replace('}}}', '').replace(squareBracket[0], '')
+        sentence = sentence.replace(token, new_word)
+
+    return sentence
+
+def preprocess_norm_03(sentence):       #html문법을 따르는 텍스트를 일반 텍스트로 바꾸기
+    tokens = pn03.findall(sentence)
+
+    for token in tokens:
+        new_word = token.replace('{{{#!html ', '').replace('}}}', '')
         sentence = sentence.replace(token, new_word)
 
     return sentence
@@ -623,7 +614,7 @@ def table2list2d(table_text):       #표를 2차원 리스트로 변경
 
 count = 0
 
-# translation_list_initialization()
+translation_list_initialization()
 #main code
 for doc in parse_namuwiki_json(debug=False):
     document_title = str(doc['title'])
@@ -631,20 +622,16 @@ for doc in parse_namuwiki_json(debug=False):
 
     isRedirect = redirect_check(document_str)   #doc가 리다이렉트 문서인지 여부를 저장
     if(isRedirect == True):                     #doc가 리다이렉트 문서일 경우
-        # before = document_title
-        # after = return_translation_result(document_str)
-        # print("### redirect document ###")
-        # print("before : ", before)
-        # print("after : ", after)
-        # print("#########################")
-        # translation_list_write(before, after)
+        before = document_title
+        after = return_translation_result(document_str)
+        print("### redirect document ###")
+        print("before : ", before)
+        print("after  : ", after)
+        print("#########################")
+        translation_list_write(before, after)
         continue                                #이하의 처리 코드를 모두 건너뛰고 다음 doc으로 이동
 
-    # print('\n================')
-    # print('--------title--------')
-    #print(document_title)  # title 출력
-    # print('----------------\n')
-
+    #전처리 진행
     document_str = preprocess0(document_str, p1)
 
     for pat in pattern_sim_list:
@@ -656,6 +643,7 @@ for doc in parse_namuwiki_json(debug=False):
     document_str = preprocess_norm_00(document_str)
     document_str = preprocess_norm_01(document_str)
     document_str = preprocess_norm_02(document_str)
+    document_str = preprocess_norm_03(document_str)
 
     document_str = preprocess_link(document_str, pex_link)
 
@@ -727,27 +715,33 @@ for doc in parse_namuwiki_json(debug=False):
     #     elif "||\n||" in table_text:
     #         (table2list2d(table_text))
 
+    #표를 2d list로 처리
     table_result = []
     for tb in table:
         result = table2list2d(tb[2:])
-        #print("result\n", result)
         table_result.append(result)
 
-    # print("--------document_str_start--------\n")
+    #printing preprocessed result
+    # print('\n================')
+    # print('---------------title--------------')
+    # print(document_title)  # title 출력
+    # print('----------------------------------\n')
+    # print("--------document_str_start--------")
     # print(document_str)                                 #문서 text 출력
-    # print("--------document_str_done--------\n")
-    # print("--------table_start--------\n")
+    # print("----------------------------------\n")
+    # print("-----------table_start------------")
     # print(table_result)                         #문서 table 출력
-    # print("--------table_done--------\n")
+    # print("------------table_done------------\n")
     # print("================\n")
 
     #save all in a json file
     savePreprocessedJson(document_title, document_str, table_result)
+
     # count += 1            #실험적으로
     # if (count>5000):      #일부 문서만 처리할 경우
     #    break              #주석 해제
 
-    #input()            #문서 전처리 결과를 하나씩 확인할 때 활성화
+    # input()            #문서 전처리 결과를 하나 씩 확인할 때 주석 해제
 
 saveLeftoverPreprocessedJson()
 translation_list_finalization()
