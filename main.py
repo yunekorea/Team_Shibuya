@@ -173,6 +173,11 @@ pattern_residue_00 = '\|\|'
 pattern_residue_01 = '\|\[\{end\}\]\|'
 pattern_residue_nl = '\n\n\n'                   #개행문자가 너무 많을 경우
 
+#Redirect 문서의 제목-내용 쌍 중 translation list에 넣지 않는 패턴
+pattern_redirect_00 = '#s-'
+pattern_redirect_01 = './.'
+
+
 #정규 표현식 패턴 컴파일
 p1 = re.compile(pattern1)
 p2 = re.compile(pattern2)
@@ -235,12 +240,27 @@ p_re_nl = re.compile(pattern_residue_nl, re.DOTALL)
 
 #re.sub(pattern=pattern, repl='', string=doc)
 
+p_red_00 = re.compile(pattern_redirect_00)
+p_red_01 = re.compile(pattern_redirect_01)
+pattern_redirect_list = [p_red_00, p_red_01]
+
 def redirect_check(sentence):               #리다이렉트 문서인지 확인 후 true/false 반환
     eng = sentence.startswith('#redirect')
     kor = sentence.startswith('#넘겨주기')
     result = eng|kor
 
     return result
+
+def redirect_filtering(bef, aft):
+    res_00 = p_red_00.findall(bef)
+    res_01 = p_red_01.findall(bef)
+    res_02 = p_red_00.findall(aft)
+    res_03 = p_red_01.findall(aft)
+    res_list = [res_00, res_01, res_02, res_03]
+    for i in range(0,len(res_list)):
+        if res_list[i] != []:
+            return False
+    return True
 
 def translation_list_initialization():
     initial = open('translationList.py', 'w', encoding='utf-8')
@@ -628,7 +648,9 @@ for doc in parse_namuwiki_json(debug=False):
         print("before : ", before)
         print("after  : ", after)
         print("#########################")
-        translation_list_write(before, after)
+        filtering_result = redirect_filtering(before, after)
+        if filtering_result == True:
+            translation_list_write(before, after)
         continue                                #이하의 처리 코드를 모두 건너뛰고 다음 doc으로 이동
 
     #전처리 진행
